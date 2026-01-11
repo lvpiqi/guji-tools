@@ -1,0 +1,342 @@
+<script setup lang="ts">
+/**
+ * AI超分工具
+ * 使用 Canvas 双线性插值实现图像放大
+ * 未来可接入 Real-ESRGAN WASM
+ */
+import { ref, computed } from 'vue'
+import FileDropzone from '@components/common/FileDropzone.vue'
+import ImageCompare from '@components/common/ImageCompare.vue'
+import ProgressBar from '@components/common/ProgressBar.vue'
+import RelatedTools from '@/components/common/RelatedTools.vue'
+
+interface Task {
+  id: string
+  file: File
+  originalUrl: string
+  resultUrl: string | null
+  status: 'pending' | 'processing' | 'done' | 'error'
+  originalSize: { width: number; height: number }
+  resultSize?: { width: number; height: number }
+}
+
+const tasks = ref<Task[]>([])
+const selectedId = ref<string | null>(null)
+const processing = ref(false)
+const progress = ref(0)
+
+// 放大倍数
+const scale = ref(2)
+const scaleOptions = [
+  { value: 2, label: '2x 放大' },
+  { value: 3, label: '3x 放大' },
+  { value: 4, label: '4x 放大' },
+]
+
+// 增强选项
+const sharpen = ref(true)
+const denoise = ref(false)
+
+const currentTask = computed(() => tasks.value.find(t => t.id === selectedId.value))
+const doneCount = computed(() => tasks.value.filter(t => t.status === 'done').length)
+
+async function handleFiles(files: File[]) {
+  for (const file of files) {
+    const img = await loadImage(file)
+    const task: Task = {
+      id: crypto.randomUUID(),
+      file,
+      originalUrl: URL.createObjectURL(file),
+      resultUrl: null,
+      status: 'pending',
+      originalSize: { width: img.width, height: img.height }
+    }
+    tasks.value.push(task)
+    if (!selectedId.value) selectedId.value = task.id
+  }
+}
+
+async function processAll() {
+  processing.value = true
+  progress.value = 0
+  const pending = tasks.value.filter(t => t.status === 'pending')
+  
+  for (let i = 0; i < pending.length; i++) {
+    await processTask(pending[i])
+    progress.value = Math.round(((i + 1) / pending.length) * 100)
+  }
+  
+  processing.value = false
+}
+
+async function processTask(task: Task) {
+  task.status = 'processing'
+  
+  try {
+    const img = await loadImage(task.file)
+    const result = upscaleImage(img, scale.value, sharpen.value, denoise.value)
+    
+    task.resultSize = { width: result.width, height: result.height }
+    const blob = await canvasToBlob(result)
+    task.resultUrl = URL.createObjectURL(blob)
+    task.status = 'done'
+  } catch (e) {
+    task.status = 'error'
+    console.error('Upscale error:', e)
+  }
+}
+
+function upscaleImage(img: HTMLImageElement, factor: number, applySharpen: boolean, applyDenoise: boolean): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  const newWidth = img.width * factor
+  const newHeight = img.height * factor
+  canvas.width = newWidth
+  canvas.height = newHeight
+  
+  const ctx = canvas.getContext('2d')!
+  
+  // 使用高质量插值
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(img, 0, 0, newWidth, newHeight)
+  
+  // 应用锐化
+  if (applySharpen) {
+    const imageData = ctx.getImageData(0, 0, newWidth, newHeight)
+    sharpenImage(imageData)
+    ctx.putImageData(imageData, 0, 0)
+  }
+  
+  // 应用降噪（简单的均值滤波）
+  if (applyDenoise) {
+    const imageData = ctx.getImageData(0, 0, newWidth, newHeight)
+    denoiseImage(imageData)
+    ctx.putImageData(imageData, 0, 0)
+  }
+  
+  return canvas
+}
+
+function sharpenImage(imageData: ImageData) {
+  const data = imageData.data
+  const width = imageData.width
+  const height = imageData.height
+  const copy = new Uint8ClampedArray(data)
+  
+  // 锐化卷积核
+  const kernel = [0, -1, 0, -1, 5, -1, 0, -1, 0]
+  
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      for (let c = 0; c < 3; c++) {
+        let sum = 0
+        for (let ky = -1; ky <= 1; ky++) {
+          for (let kx = -1; kx <= 1; kx++) {
+            const idx = ((y + ky) * width + (x + kx)) * 4 + c
+            sum += copy[idx] * kernel[(ky + 1) * 3 + (kx + 1)]
+          }
+        }
+        const idx = (y * width + x) * 4 + c
+        data[idx] = Math.max(0, Math.min(255, sum))
+      }
+    }
+  }
+}
+
+function denoiseImage(imageData: ImageData) {
+  const data = imageData.data
+  const width = imageData.width
+  const height = imageData.height
+  const copy = new Uint8ClampedArray(data)
+  
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      for (let c = 0; c < 3; c++) {
+        let sum = 0
+        for (let ky = -1; ky <= 1; ky++) {
+          for (let kx = -1; kx <= 1; kx++) {
+            const idx = ((y + ky) * width + (x + kx)) * 4 + c
+            sum += copy[idx]
+          }
+        }
+        const idx = (y * width + x) * 4 + c
+        data[idx] = Math.round(sum / 9)
+      }
+    }
+  }
+}
+
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = URL.createObjectURL(file)
+  })
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Failed')), 'image/png')
+  })
+}
+
+function downloadResult(task: Task) {
+  if (!task.resultUrl) return
+  const a = document.createElement('a')
+  a.href = task.resultUrl
+  a.download = `upscale_${scale.value}x_${task.file.name}`
+  a.click()
+}
+
+async function downloadAll() {
+  const JSZip = (await import('jszip')).default
+  const zip = new JSZip()
+  
+  for (const task of tasks.value) {
+    if (task.resultUrl) {
+      const response = await fetch(task.resultUrl)
+      const blob = await response.blob()
+      zip.file(`upscale_${scale.value}x_${task.file.name}`, blob)
+    }
+  }
+  
+  const blob = await zip.generateAsync({ type: 'blob' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = 'upscaled_images.zip'
+  a.click()
+}
+
+function clearAll() {
+  tasks.value.forEach(t => {
+    if (t.originalUrl) URL.revokeObjectURL(t.originalUrl)
+    if (t.resultUrl) URL.revokeObjectURL(t.resultUrl)
+  })
+  tasks.value = []
+  selectedId.value = null
+}
+</script>
+
+<template>
+  <div class="tool-page">
+    <header class="tool-header">
+      <h1 class="tool-title">AI超分辨率</h1>
+      <p class="tool-desc">提升古籍图像分辨率，支持2x/3x/4x放大，可选锐化增强</p>
+    </header>
+
+    <div class="tool-body">
+      <div class="tool-left">
+        <FileDropzone
+          accept="image/jpeg,image/png,image/webp"
+          :max-size="30"
+          @files="handleFiles"
+        />
+
+        <div class="settings-panel">
+          <h3 class="settings-title">放大设置</h3>
+          
+          <div class="setting-item">
+            <span>放大倍数</span>
+            <select v-model="scale" class="select-input">
+              <option v-for="opt in scaleOptions" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+          
+          <label class="setting-item">
+            <input type="checkbox" v-model="sharpen" />
+            <span>锐化增强</span>
+          </label>
+          
+          <label class="setting-item">
+            <input type="checkbox" v-model="denoise" />
+            <span>降噪处理</span>
+          </label>
+        </div>
+
+        <div v-if="tasks.length" class="task-list">
+          <div
+            v-for="task in tasks"
+            :key="task.id"
+            class="task-item"
+            :class="{ active: selectedId === task.id, done: task.status === 'done' }"
+            @click="selectedId = task.id"
+          >
+            <div class="task-info">
+              <span class="task-name">{{ task.file.name }}</span>
+              <span class="task-size">
+                {{ task.originalSize.width }}×{{ task.originalSize.height }}
+                <template v-if="task.resultSize">
+                  → {{ task.resultSize.width }}×{{ task.resultSize.height }}
+                </template>
+              </span>
+            </div>
+            <span class="task-status">
+              <template v-if="task.status === 'pending'">待处理</template>
+              <template v-else-if="task.status === 'processing'">处理中...</template>
+              <template v-else-if="task.status === 'done'">✓</template>
+              <template v-else>✗</template>
+            </span>
+          </div>
+        </div>
+
+        <div class="tool-actions">
+          <button class="btn-primary" :disabled="!tasks.length || processing" @click="processAll">
+            {{ processing ? '处理中...' : '开始放大' }}
+          </button>
+          <button class="btn-secondary" :disabled="doneCount === 0" @click="downloadAll">
+            打包下载 ({{ doneCount }})
+          </button>
+          <button class="btn-text" :disabled="!tasks.length" @click="clearAll">清空</button>
+        </div>
+
+        <ProgressBar v-if="processing" :value="progress" class="mt-4" />
+      </div>
+
+      <div class="tool-preview">
+        <template v-if="currentTask?.resultUrl">
+          <ImageCompare :before="currentTask.originalUrl" :after="currentTask.resultUrl" />
+          <button class="btn-download" @click="downloadResult(currentTask)">下载此图</button>
+        </template>
+        <template v-else-if="currentTask">
+          <img :src="currentTask.originalUrl" class="preview-image" alt="预览" />
+        </template>
+        <div v-else class="preview-empty">上传图片开始处理</div>
+      </div>
+    </div>
+
+    <RelatedTools />
+  </div>
+</template>
+
+<style scoped>
+.tool-page { @apply max-w-6xl mx-auto; }
+.tool-header { @apply mb-6; }
+.tool-title { @apply text-2xl font-bold text-stone-800; }
+.tool-desc { @apply text-stone-600 mt-1; }
+.tool-body { @apply grid grid-cols-1 lg:grid-cols-2 gap-6; }
+.tool-left { @apply space-y-4; }
+.settings-panel { @apply bg-white rounded-lg border border-stone-200 p-4; }
+.settings-title { @apply font-medium text-stone-800 mb-3; }
+.setting-item { @apply flex items-center gap-2 py-2 text-sm text-stone-700; }
+.setting-item input[type="checkbox"] { @apply w-4 h-4 accent-amber-500; }
+.select-input { @apply ml-auto px-3 py-1 border border-stone-300 rounded text-sm; }
+.task-list { @apply bg-white rounded-lg border border-stone-200 divide-y divide-stone-100 max-h-48 overflow-auto; }
+.task-item { @apply flex justify-between items-center px-4 py-2 cursor-pointer hover:bg-stone-50; }
+.task-item.active { @apply bg-amber-50; }
+.task-item.done .task-status { @apply text-green-600; }
+.task-info { @apply flex flex-col; }
+.task-name { @apply text-sm text-stone-700 truncate; }
+.task-size { @apply text-xs text-stone-400; }
+.task-status { @apply text-xs text-stone-500; }
+.tool-actions { @apply flex gap-3 flex-wrap; }
+.btn-primary { @apply px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed; }
+.btn-secondary { @apply px-4 py-2 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300 disabled:opacity-50 disabled:cursor-not-allowed; }
+.btn-text { @apply px-4 py-2 text-stone-500 hover:text-stone-700 disabled:opacity-50; }
+.tool-preview { @apply bg-white rounded-xl border border-stone-200 p-4 min-h-[400px] flex flex-col items-center justify-center; }
+.preview-image { @apply max-w-full max-h-[500px] object-contain; }
+.preview-empty { @apply text-stone-400; }
+.btn-download { @apply mt-4 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600; }
+</style>
