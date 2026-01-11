@@ -348,7 +348,6 @@ function clearAll() {
           </div>
         </div>
       </div>
-    </div>
 
     <div class="footer-actions">
       <button class="btn-text" @click="clearAll">清空</button>

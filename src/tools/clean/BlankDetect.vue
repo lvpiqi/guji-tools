@@ -331,8 +331,8 @@ const stats = computed(() => ({
         <div class="page-name">{{ page.file.name }}</div>
       </div>
     </div>
-
-    </ToolPageSeo>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
