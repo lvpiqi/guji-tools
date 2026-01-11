@@ -113,8 +113,12 @@ async function generateWithAI(
 ): Promise<Partial<CharacterData>> {
   const prompt = buildPrompt(char, fields)
   
-  // 确保 API Key 是纯 ASCII
-  const cleanApiKey = apiKey.trim()
+  // 确保 API Key 是纯 ASCII，移除所有非 ASCII 字符
+  const cleanApiKey = apiKey.trim().replace(/[^\x00-\x7F]/g, '')
+  
+  if (!cleanApiKey || cleanApiKey.length < 10) {
+    throw new Error('API Key 无效')
+  }
   
   const requestBody = {
     model: 'deepseek-chat',
@@ -132,7 +136,7 @@ async function generateWithAI(
   const response = await fetch(DEEPSEEK_API, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + cleanApiKey
     },
     body: JSON.stringify(requestBody)

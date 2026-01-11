@@ -3,26 +3,89 @@
  * 管理后台 - API 配置
  */
 import { ref, onMounted } from 'vue'
+import { supabase } from '@core/services/supabase'
 
 const deepseekKey = ref('')
 const showKey = ref(false)
 const testResult = ref<{ success: boolean; message: string } | null>(null)
 const testing = ref(false)
+const saving = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
+  // 优先从数据库加载
+  try {
+    const { data } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'deepseek_api_key')
+      .maybeSingle()
+    
+    if (data?.value) {
+      deepseekKey.value = data.value
+      // 同步到 localStorage
+      localStorage.setItem('deepseek_api_key', data.value)
+      return
+    }
+  } catch (e) {
+    console.log('Failed to load from DB:', e)
+  }
+  
+  // 回退到 localStorage
   deepseekKey.value = localStorage.getItem('deepseek_api_key') || ''
 })
 
-function saveKey() {
-  localStorage.setItem('deepseek_api_key', deepseekKey.value)
-  testResult.value = { success: true, message: 'API Key 已保存' }
+async function saveKey() {
+  if (!deepseekKey.value) return
+  
+  saving.value = true
+  testResult.value = null
+  
+  try {
+    // 保存到数据库
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({
+        key: 'deepseek_api_key',
+        value: deepseekKey.value.trim(),
+        description: 'DeepSeek API Key',
+        updated_at: new Date().toISOString()
+      } as any, {
+        onConflict: 'key'
+      })
+    
+    if (error) {
+      console.error('Save to DB error:', error)
+      testResult.value = { success: false, message: '保存到数据库失败: ' + error.message }
+      return
+    }
+    
+    // 同时保存到 localStorage
+    localStorage.setItem('deepseek_api_key', deepseekKey.value.trim())
+    testResult.value = { success: true, message: 'API Key 已保存到数据库' }
+  } catch (e) {
+    testResult.value = { success: false, message: '保存失败: ' + (e instanceof Error ? e.message : '未知错误') }
+  } finally {
+    saving.value = false
+  }
 }
 
-function clearKey() {
+async function clearKey() {
   if (!confirm('确定要清除 API Key 吗？')) return
-  localStorage.removeItem('deepseek_api_key')
-  deepseekKey.value = ''
-  testResult.value = { success: true, message: 'API Key 已清除' }
+  
+  try {
+    // 从数据库删除
+    await supabase
+      .from('system_settings')
+      .update({ value: '' } as any)
+      .eq('key', 'deepseek_api_key')
+    
+    // 从 localStorage 删除
+    localStorage.removeItem('deepseek_api_key')
+    deepseekKey.value = ''
+    testResult.value = { success: true, message: 'API Key 已清除' }
+  } catch (e) {
+    testResult.value = { success: false, message: '清除失败' }
+  }
 }
 
 async function testKey() {
@@ -35,15 +98,17 @@ async function testKey() {
   testResult.value = null
   
   try {
+    const cleanKey = deepseekKey.value.trim().replace(/[^\x00-\x7F]/g, '')
+    
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${deepseekKey.value}`
+        'Authorization': 'Bearer ' + cleanKey
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
-        messages: [{ role: 'user', content: '你好' }],
+        messages: [{ role: 'user', content: 'Hi' }],
         max_tokens: 10
       })
     })
@@ -101,8 +166,8 @@ const maskedKey = (key: string) => {
         </div>
         
         <div class="key-actions">
-          <button class="btn-primary" @click="saveKey" :disabled="!deepseekKey">
-            保存
+          <button class="btn-primary" @click="saveKey" :disabled="!deepseekKey || saving">
+            {{ saving ? '保存中...' : '保存' }}
           </button>
           <button class="btn-secondary" @click="testKey" :disabled="!deepseekKey || testing">
             {{ testing ? '测试中...' : '测试连接' }}
@@ -134,10 +199,10 @@ const maskedKey = (key: string) => {
     <div class="info-section">
       <h3>💡 使用说明</h3>
       <ul>
-        <li>API Key 存储在浏览器本地，不会上传到服务器</li>
+        <li>API Key 会保存到数据库，所有用户都可以使用</li>
         <li>每次 AI 查询会消耗少量 token（约 500-1000 tokens/字）</li>
         <li>DeepSeek API 价格较低，适合大量查询</li>
-        <li>生成的数据会缓存到本地，相同汉字不会重复调用</li>
+        <li>生成的数据会缓存到数据库，相同汉字不会重复调用</li>
       </ul>
     </div>
 
