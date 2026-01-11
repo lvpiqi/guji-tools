@@ -118,11 +118,14 @@ async function loadData() {
   
   loading.value = true
   error.value = null
+  showApiKeyInput.value = false
   
   try {
-    // 1. 先从数据库获取
+    // 1. \u5148\u4ECE\u6570\u636E\u5E93\u83B7\u53D6
+    console.log('Fetching from DB for char:', char.value)
     const dbData = await getCharacterFromDB(char.value)
     if (dbData) {
+      console.log('Found in DB:', dbData)
       data.value = {
         char: dbData.char,
         variants: dbData.variants,
@@ -137,27 +140,34 @@ async function loadData() {
       return
     }
     
-    // 2. 检查本地缓存
+    console.log('Not found in DB, checking localStorage')
+    
+    // 2. \u68C0\u67E5\u672C\u5730\u7F13\u5B58
     const cached = localStorage.getItem(`guji_ai_${encodeURIComponent(char.value)}`)
     if (cached) {
+      console.log('Found in localStorage')
       data.value = JSON.parse(cached)
       generateRelatedChars()
       loading.value = false
       return
     }
     
-    // 3. 无缓存且无API Key，提示用户
+    console.log('Not found in localStorage, need API Key')
+    
+    // 3. \u65E0\u7F13\u5B58\u4E14\u65E0API Key\uFF0C\u63D0\u793A\u7528\u6237
     if (!apiKey.value) {
       showApiKeyInput.value = true
       loading.value = false
       return
     }
     
-    // 4. 调用AI生成（会自动保存到数据库）
+    // 4. \u8C03\u7528AI\u751F\u6210\uFF08\u4F1A\u81EA\u52A8\u4FDD\u5B58\u5230\u6570\u636E\u5E93\uFF09
+    console.log('Generating with AI')
     data.value = await getCharacterData(char.value, apiKey.value)
     generateRelatedChars()
     
   } catch (e) {
+    console.error('loadData error:', e)
     error.value = e instanceof Error ? e.message : '\u52A0\u8F7D\u5931\u8D25'
   } finally {
     loading.value = false
