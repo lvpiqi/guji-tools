@@ -6,6 +6,10 @@
 import { ref } from 'vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
+
+// 配额检查
+const { canPerform, consume } = useQuota('punctuation', '自动句读')
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -115,7 +119,17 @@ const sentencePatterns = [
 async function processPunctuation() {
   if (!inputText.value.trim()) return
   
+  // 配额检查
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   processing.value = true
+  
+  // 消耗配额
+  await consume(1)
   
   try {
     if (useApi.value) {

@@ -360,6 +360,183 @@ INSERT INTO tool_policies (tool_id, tool_name, category, guest_allowed, guest_fr
 ON CONFLICT (tool_id) DO NOTHING;
 
 -- =============================================
+-- AI 生成内容表（汉字详情）
+-- =============================================
+
+CREATE TABLE character_data (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  char VARCHAR(10) NOT NULL UNIQUE,
+  variants TEXT[],
+  definition JSONB,
+  evolution JSONB,
+  rhyme JSONB,
+  source VARCHAR(20) DEFAULT 'ai',
+  view_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 创建索引
+CREATE INDEX idx_character_data_char ON character_data(char);
+CREATE INDEX idx_character_data_view_count ON character_data(view_count DESC);
+CREATE INDEX idx_character_data_created_at ON character_data(created_at DESC);
+
+-- RLS 策略
+ALTER TABLE character_data ENABLE ROW LEVEL SECURITY;
+
+-- 所有人可以读取
+CREATE POLICY "Anyone can view character data" ON character_data
+  FOR SELECT USING (TRUE);
+
+-- 登录用户可以插入
+CREATE POLICY "Authenticated users can insert character data" ON character_data
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+-- 管理员可以管理
+CREATE POLICY "Admins can manage character data" ON character_data
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- =============================================
+-- AI 生成内容表（摘要）
+-- =============================================
+
+CREATE TABLE summary_data (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  slug VARCHAR(100) NOT NULL UNIQUE,
+  title VARCHAR(200),
+  original_text TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  translation TEXT,
+  keywords TEXT[],
+  themes TEXT[],
+  analysis TEXT,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  is_public BOOLEAN DEFAULT TRUE,
+  view_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 创建索引
+CREATE INDEX idx_summary_data_slug ON summary_data(slug);
+CREATE INDEX idx_summary_data_user_id ON summary_data(user_id);
+CREATE INDEX idx_summary_data_is_public ON summary_data(is_public);
+CREATE INDEX idx_summary_data_view_count ON summary_data(view_count DESC);
+CREATE INDEX idx_summary_data_created_at ON summary_data(created_at DESC);
+
+-- 全文搜索索引
+CREATE INDEX idx_summary_data_search ON summary_data USING GIN (
+  to_tsvector('simple', original_text || ' ' || summary || ' ' || COALESCE(title, ''))
+);
+
+-- RLS 策略
+ALTER TABLE summary_data ENABLE ROW LEVEL SECURITY;
+
+-- 公开的摘要所有人可以读取
+CREATE POLICY "Anyone can view public summaries" ON summary_data
+  FOR SELECT USING (is_public = TRUE);
+
+-- 用户可以查看自己的摘要
+CREATE POLICY "Users can view own summaries" ON summary_data
+  FOR SELECT USING (auth.uid() = user_id);
+
+-- 登录用户可以插入
+CREATE POLICY "Authenticated users can insert summaries" ON summary_data
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+-- 用户可以更新自己的摘要
+CREATE POLICY "Users can update own summaries" ON summary_data
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- 管理员可以管理所有
+CREATE POLICY "Admins can manage all summaries" ON summary_data
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- =============================================
+-- 动态 Sitemap 表
+-- =============================================
+
+CREATE TABLE sitemap_entries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  url VARCHAR(500) NOT NULL UNIQUE,
+  type VARCHAR(50) NOT NULL,
+  priority DECIMAL(2,1) DEFAULT 0.5,
+  changefreq VARCHAR(20) DEFAULT 'weekly',
+  lastmod TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 创建索引
+CREATE INDEX idx_sitemap_entries_type ON sitemap_entries(type);
+CREATE INDEX idx_sitemap_entries_lastmod ON sitemap_entries(lastmod DESC);
+
+-- RLS 策略
+ALTER TABLE sitemap_entries ENABLE ROW LEVEL SECURITY;
+
+-- 所有人可以读取
+CREATE POLICY "Anyone can view sitemap" ON sitemap_entries
+  FOR SELECT USING (TRUE);
+
+-- 系统可以插入/更新
+CREATE POLICY "System can manage sitemap" ON sitemap_entries
+  FOR ALL USING (TRUE);
+
+-- =============================================
+-- 函数：自动添加 sitemap 条目
+-- =============================================
+
+CREATE OR REPLACE FUNCTION add_character_to_sitemap()
+RETURNS TRIGGER AS $
+BEGIN
+  INSERT INTO sitemap_entries (url, type, priority, changefreq, lastmod)
+  VALUES (
+    '/char/' || encode(NEW.char::bytea, 'escape'),
+    'character',
+    0.6,
+    'monthly',
+    NOW()
+  )
+  ON CONFLICT (url) DO UPDATE SET lastmod = NOW();
+  RETURN NEW;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_character_created
+  AFTER INSERT ON character_data
+  FOR EACH ROW EXECUTE FUNCTION add_character_to_sitemap();
+
+CREATE OR REPLACE FUNCTION add_summary_to_sitemap()
+RETURNS TRIGGER AS $
+BEGIN
+  IF NEW.is_public THEN
+    INSERT INTO sitemap_entries (url, type, priority, changefreq, lastmod)
+    VALUES (
+      '/summary/' || NEW.slug,
+      'summary',
+      0.5,
+      'monthly',
+      NOW()
+    )
+    ON CONFLICT (url) DO UPDATE SET lastmod = NOW();
+  END IF;
+  RETURN NEW;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_summary_created
+  AFTER INSERT ON summary_data
+  FOR EACH ROW EXECUTE FUNCTION add_summary_to_sitemap();
+
+
+-- =============================================
 -- 用户反馈表
 -- =============================================
 

@@ -143,6 +143,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'tools', name: 'admin-tools', component: () => import('@/views/admin/ToolsManage.vue'), meta: { title: '工具管理' } },
       { path: 'users', name: 'admin-users', component: () => import('@/views/admin/UsersManage.vue'), meta: { title: '用户管理' } },
       { path: 'plans', name: 'admin-plans', component: () => import('@/views/admin/PlansManage.vue'), meta: { title: '计划管理' } },
+      { path: 'promotions', name: 'admin-promotions', component: () => import('@/views/admin/PromotionManage.vue'), meta: { title: '注册活动' } },
       { path: 'feedback', name: 'admin-feedback', component: () => import('@/views/admin/FeedbackManage.vue'), meta: { title: '用户反馈' } },
       { path: 'settings', name: 'admin-settings', component: () => import('@/views/admin/Settings.vue'), meta: { title: '系统设置' } },
     ]

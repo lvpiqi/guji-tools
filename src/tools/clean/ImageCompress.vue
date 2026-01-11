@@ -6,6 +6,10 @@
 import { ref, computed } from 'vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
+
+// 配额检查
+const { canPerform, consume } = useQuota('compress', '图片压缩')
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -152,9 +156,19 @@ async function compressImage(file: File): Promise<{ blob: Blob; format: string }
 async function doCompress() {
   if (files.value.length === 0) return
   
+  // 配额检查
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   processing.value = true
   progress.value = 0
   results.value = []
+  
+  // 消耗配额
+  await consume(files.value.length)
   
   for (let i = 0; i < files.value.length; i++) {
     const file = files.value[i]

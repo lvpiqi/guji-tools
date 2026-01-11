@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 import { getCharacterData, type CharacterData } from '@core/services/aiContent'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -76,6 +77,9 @@ const seoConfig: ToolSeoConfig = {
   isOffline: false,
   isFree: true
 }
+
+// 配额检查
+const { canPerform, consume } = useQuota('rhyme-check', '押韵检测')
 
 const router = useRouter()
 const inputText = ref('')
@@ -162,7 +166,15 @@ const rhymeTable: Record<string, { rhyme: string; tone: string }> = {
 async function analyze() {
   if (!inputText.value.trim()) return
   
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   loading.value = true
+  
+  await consume(1)
   
   // 按行分割
   const lines = inputText.value

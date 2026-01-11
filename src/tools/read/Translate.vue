@@ -7,6 +7,10 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
+
+// 配额检查
+const { canPerform, consume } = useQuota('translate', '古文翻译')
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -87,9 +91,21 @@ const apiKey = ref(localStorage.getItem('deepseek_api_key') || '')
 
 async function doTranslate() {
   if (!inputText.value.trim() || !apiKey.value) return
+  
+  // 配额检查
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   processing.value = true
   modernChinese.value = ''
   english.value = ''
+  
+  // 消耗配额
+  await consume(1)
+  
   try {
     const styleDesc = style.value === 'literal' ? '\u76F4\u8BD1' : '\u610F\u8BD1'
     if (targetLang.value === 'modern' || targetLang.value === 'both') {

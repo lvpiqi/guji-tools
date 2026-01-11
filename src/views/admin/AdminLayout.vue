@@ -18,6 +18,7 @@ const menuItems = [
   { path: '/admin/tools', name: '工具管理', icon: '🔧', exact: false },
   { path: '/admin/users', name: '用户管理', icon: '👥', exact: false },
   { path: '/admin/plans', name: '计划管理', icon: '💎', exact: false },
+  { path: '/admin/promotions', name: '注册活动', icon: '🎁', exact: false },
   { path: '/admin/feedback', name: '用户反馈', icon: '💬', exact: false },
   { path: '/admin/seo', name: 'SEO管理', icon: '🔍', exact: false },
   { path: '/admin/content', name: '内容管理', icon: '📝', exact: false },

@@ -1,13 +1,14 @@
 /**
  * AI 内容生成服务
  * 使用 DeepSeek API 动态生成字形、释义、韵部等数据
- * 生成的内容会被缓存并创建独立页面供搜索引擎收录
+ * 生成的内容会保存到数据库并创建独立页面供搜索引擎收录
  */
+import { getCharacterFromDB, saveCharacterToDB } from './contentService'
 
 // DeepSeek API 配置
 const DEEPSEEK_API = 'https://api.deepseek.com/v1/chat/completions'
 
-// 本地存储键
+// 本地存储键（作为备用缓存）
 const CACHE_PREFIX = 'guji_ai_'
 
 export interface CharacterData {
@@ -42,25 +43,62 @@ export interface CharacterData {
 }
 
 /**
- * 获取字符数据（优先本地缓存，无则调用AI生成）
+ * 获取字符数据（优先数据库，其次本地缓存，无则调用AI生成）
  */
 export async function getCharacterData(
   char: string, 
   apiKey: string,
   fields: ('variants' | 'definition' | 'evolution' | 'rhyme')[] = ['variants', 'definition', 'evolution', 'rhyme']
 ): Promise<CharacterData> {
-  // 1. 检查本地缓存
+  // 1. 先从数据库获取
+  const dbData = await getCharacterFromDB(char)
+  if (dbData && hasAllFields(dbData as CharacterData, fields)) {
+    return {
+      ...dbData,
+      generatedAt: new Date(dbData.created_at || Date.now()).getTime(),
+      source: dbData.source as 'ai' | 'local'
+    }
+  }
+
+  // 2. 检查本地缓存
   const cached = getFromCache(char)
   if (cached && hasAllFields(cached, fields)) {
+    // 同步到数据库
+    saveCharacterToDB({
+      char: cached.char,
+      variants: cached.variants,
+      definition: cached.definition,
+      evolution: cached.evolution,
+      rhyme: cached.rhyme,
+      source: cached.source
+    })
     return cached
   }
 
-  // 2. 调用 AI 生成
+  // 3. 调用 AI 生成
   const generated = await generateWithAI(char, apiKey, fields)
   
-  // 3. 合并并缓存
-  const merged = { ...cached, ...generated, char, generatedAt: Date.now(), source: 'ai' as const }
+  // 4. 合并并保存
+  const merged: CharacterData = { 
+    ...cached, 
+    ...generated, 
+    char, 
+    generatedAt: Date.now(), 
+    source: 'ai' as const 
+  }
+  
+  // 保存到本地缓存
   saveToCache(char, merged)
+  
+  // 保存到数据库（异步，不阻塞）
+  saveCharacterToDB({
+    char: merged.char,
+    variants: merged.variants,
+    definition: merged.definition,
+    evolution: merged.evolution,
+    rhyme: merged.rhyme,
+    source: merged.source
+  })
   
   return merged
 }

@@ -8,6 +8,7 @@ import FileDropzone from '@components/common/FileDropzone.vue'
 import ProgressBar from '@components/common/ProgressBar.vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -79,6 +80,9 @@ const seoConfig: ToolSeoConfig = {
   isFree: true
 }
 
+// 配额检查
+const { canPerform, consume } = useQuota('dual-layer-pdf', '双层PDF')
+
 interface PageItem {
   id: string
   file: File
@@ -140,8 +144,16 @@ function removePage(id: string) {
 async function generatePdf() {
   if (pages.value.length === 0) return
 
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+
   processing.value = true
   progress.value = 0
+
+  await consume(1)
 
   try {
     const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib')

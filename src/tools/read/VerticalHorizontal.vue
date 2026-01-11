@@ -6,6 +6,7 @@
 import { ref, computed } from 'vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -70,6 +71,9 @@ const seoConfig: ToolSeoConfig = {
   isOffline: true,
   isFree: true
 }
+
+// 配额检查
+const { canPerform, consume } = useQuota('vertical-horizontal', '竖横排转换')
 
 const inputText = ref('')
 const mode = ref<'v2h' | 'h2v'>('v2h')

@@ -7,6 +7,7 @@ import { ref, computed, watch } from 'vue'
 import FileDropzone from '@components/common/FileDropzone.vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -78,6 +79,9 @@ const seoConfig: ToolSeoConfig = {
   isFree: true
 }
 
+// 配额检查
+const { canPerform, consume } = useQuota('long-image', '长图生成')
+
 interface ImageItem {
   id: string
   file: File
@@ -140,7 +144,15 @@ function moveImage(id: string, direction: 'up' | 'down') {
 }
 
 async function generateLongImage() {
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   generating.value = true
+  
+  await consume(1)
   
   try {
     if (mode.value === 'image') {

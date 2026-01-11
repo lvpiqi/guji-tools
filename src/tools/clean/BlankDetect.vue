@@ -6,6 +6,7 @@
 import { ref, computed } from 'vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -76,6 +77,9 @@ const seoConfig: ToolSeoConfig = {
   isOffline: true,
   isFree: true
 }
+
+// 配额检查
+const { canPerform, consume } = useQuota('blank-detect', '空白页检测')
 
 interface PageInfo {
   file: File
@@ -193,8 +197,16 @@ async function analyzeImage(file: File): Promise<{ brightness: number; hash: str
 async function doAnalyze() {
   if (pages.value.length === 0) return
   
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   processing.value = true
   progress.value = 0
+  
+  await consume(1)
   
   // 分析每张图片
   for (let i = 0; i < pages.value.length; i++) {

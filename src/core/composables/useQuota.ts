@@ -1,99 +1,98 @@
 /**
- * 用户配额管理
- * 控制免费/付费功能限制
+ * 用户配额管理 - 统一使用 auth store 的配额系统
+ * 
+ * 游客：每个工具免费 3 次（存 localStorage）
+ * 登录用户：按计划配额（free/basic/pro/enterprise）
  */
-import { ref, computed } from 'vue'
-import type { UserQuota } from '@core/types'
+import { computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
-const STORAGE_KEY = 'guji_quota'
+export function useQuota(toolId: string = 'default', toolName: string = '工具') {
+  const authStore = useAuthStore()
 
-// 免费用户限制
-const FREE_LIMITS = {
-  dailyProcessing: 20,    // 每日处理次数
-  dailyOcr: 10,           // 每日OCR次数
-  dailyExport: 5,         // 每日导出次数
-  maxFileSize: 10,        // 单文件最大MB
-  storageLimit: 100,      // 存储上限MB
-}
+  // 是否已登录
+  const isLoggedIn = computed(() => authStore.isAuthenticated)
+  
+  // 是否是管理员（无限制）
+  const isAdmin = computed(() => authStore.isAdmin)
 
-// Pro用户限制
-const PRO_LIMITS = {
-  dailyProcessing: Infinity,
-  dailyOcr: Infinity,
-  dailyExport: Infinity,
-  maxFileSize: 100,
-  storageLimit: 10000,
-}
+  // 当前计划
+  const currentPlan = computed(() => authStore.currentPlan)
 
-export function useQuota() {
-  const quota = ref<UserQuota>(loadQuota())
+  // 剩余次数
+  const remaining = computed(() => authStore.getRemainingUsage(toolId))
 
-  const limits = computed(() => quota.value.isPro ? PRO_LIMITS : FREE_LIMITS)
+  // 配额信息
+  const quotaInfo = computed(() => {
+    if (isAdmin.value) {
+      return { daily: -1, monthly: -1, dailyUsed: 0, monthlyUsed: 0 }
+    }
+    
+    if (authStore.quota) {
+      return {
+        daily: authStore.quota.daily_limit,
+        monthly: authStore.quota.monthly_limit,
+        dailyUsed: authStore.quota.daily_used,
+        monthlyUsed: authStore.quota.monthly_used,
+      }
+    }
+    
+    // 游客
+    const guestUsed = authStore.guestTracker?.toolUsage[toolId] || 0
+    return {
+      daily: 3,
+      monthly: 3,
+      dailyUsed: guestUsed,
+      monthlyUsed: guestUsed,
+    }
+  })
 
-  const dailyRemaining = computed(() => ({
-    processing: Math.max(0, limits.value.dailyProcessing - quota.value.daily.used),
-    ocr: Math.max(0, limits.value.dailyOcr - quota.value.daily.used),
-    export: Math.max(0, limits.value.dailyExport - quota.value.daily.used),
-  }))
-
-  /** 检查是否可以执行操作 */
-  function canPerform(type: 'processing' | 'ocr' | 'export', count = 1): boolean {
-    if (quota.value.isPro) return true
-    return dailyRemaining.value[type] >= count
+  /**
+   * 检查是否可以使用工具
+   * @param guestFreeCount 游客免费次数，默认 3
+   */
+  function canPerform(guestFreeCount: number = 3): { allowed: boolean; reason?: string } {
+    return authStore.canUseTool(toolId, guestFreeCount)
   }
 
-  /** 消耗配额 */
-  function consume(type: 'processing' | 'ocr' | 'export', count = 1): boolean {
-    if (!canPerform(type, count)) return false
-    quota.value.daily.used += count
-    saveQuota(quota.value)
+  /**
+   * 消耗配额（使用工具后调用）
+   * @param creditCost 消耗的点数，默认 1
+   */
+  async function consume(creditCost: number = 1): Promise<boolean> {
+    const check = canPerform()
+    if (!check.allowed) return false
+    
+    await authStore.recordToolUsage(toolId, toolName, creditCost)
     return true
   }
 
-  /** 检查每日重置 */
-  function checkDailyReset() {
-    const lastReset = localStorage.getItem('guji_last_reset')
-    const today = new Date().toDateString()
+  /**
+   * 获取提示文案
+   */
+  const usageHint = computed(() => {
+    if (isAdmin.value) return '管理员无限制'
     
-    if (lastReset !== today) {
-      quota.value.daily.used = 0
-      localStorage.setItem('guji_last_reset', today)
-      saveQuota(quota.value)
+    if (isLoggedIn.value) {
+      const r = remaining.value
+      if (r === -1) return '无限次数'
+      return `今日剩余 ${r} 次`
     }
-  }
-
-  /** 升级到Pro */
-  function upgradeToPro() {
-    quota.value.isPro = true
-    saveQuota(quota.value)
-  }
-
-  // 初始化时检查重置
-  checkDailyReset()
+    
+    // 游客
+    const r = remaining.value
+    if (r <= 0) return '免费次数已用完，请登录继续使用'
+    return `免费试用剩余 ${r} 次`
+  })
 
   return {
-    quota,
-    limits,
-    dailyRemaining,
+    isLoggedIn,
+    isAdmin,
+    currentPlan,
+    remaining,
+    quotaInfo,
     canPerform,
     consume,
-    upgradeToPro,
+    usageHint,
   }
-}
-
-function loadQuota(): UserQuota {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) return JSON.parse(stored)
-  } catch {}
-  
-  return {
-    daily: { used: 0, limit: FREE_LIMITS.dailyProcessing },
-    storage: { used: 0, limit: FREE_LIMITS.storageLimit },
-    isPro: false,
-  }
-}
-
-function saveQuota(quota: UserQuota) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(quota))
 }

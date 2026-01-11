@@ -7,6 +7,7 @@ import { ref, computed } from 'vue'
 import FileDropzone from '@components/common/FileDropzone.vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -82,6 +83,9 @@ const seoConfig: ToolSeoConfig = {
   isFree: true
 }
 
+// 配额检查
+const { canPerform, consume } = useQuota('extract-seal', '印章提取')
+
 interface ExtractedSeal {
   id: string
   blob: Blob
@@ -114,8 +118,16 @@ function handleFiles(files: File[]) {
 async function extractSeals() {
   if (!imageFile.value) return
   
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   processing.value = true
   extractedSeals.value = []
+  
+  await consume(1)
   
   try {
     const img = await loadImage(imageUrl.value)

@@ -1,12 +1,19 @@
 <script setup lang="ts">
 /**
- * 自动摘要工具
- * SEO 优化版本
+ * \u81EA\u52A8\u6458\u8981\u5DE5\u5177
+ * SEO \u4F18\u5316\u7248\u672C - \u4FDD\u5B58\u5230\u6570\u636E\u5E93
  */
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
+import { saveSummaryToDB, getUserSummaries, type SummaryData } from '@core/services/contentService'
+import { useAuthStore } from '@/stores/auth'
+
+// \u914D\u989D\u68C0\u67E5
+const { canPerform, consume } = useQuota('summary', '\u81EA\u52A8\u6458\u8981')
+const authStore = useAuthStore()
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -90,6 +97,7 @@ const includeAnalysis = ref(true)
 const apiKey = ref(localStorage.getItem('deepseek_api_key') || '')
 const savedSummaryId = ref('')
 const historyList = ref<Array<{id: string, text: string, date: string}>>([])
+const dbHistoryList = ref<SummaryData[]>([])
 
 const lengthMap: Record<string, string> = { 
   medium: '100-150\u5B57', 
@@ -97,8 +105,16 @@ const lengthMap: Record<string, string> = {
   full: '500\u5B57\u4EE5\u4E0A\uFF0C\u5168\u9762\u8BE6\u7EC6' 
 }
 
-// 加载历史记录
-function loadHistory() {
+// \u52A0\u8F7D\u5386\u53F2\u8BB0\u5F55
+async function loadHistory() {
+  // \u4ECE\u6570\u636E\u5E93\u52A0\u8F7D
+  if (authStore.user?.id) {
+    try {
+      dbHistoryList.value = await getUserSummaries(authStore.user.id, 10)
+    } catch {}
+  }
+  
+  // \u4ECE localStorage \u52A0\u8F7D\uFF08\u517C\u5BB9\u65E7\u6570\u636E\uFF09
   const list: Array<{id: string, text: string, date: string}> = []
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)
@@ -115,6 +131,13 @@ loadHistory()
 
 async function doSummarize() {
   if (!inputText.value.trim() || !apiKey.value) return
+  
+  // 配额检查
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
   
   // 检查是否已有相同原文的摘要，直接复用
   const existingId = findExistingSummary(inputText.value)
@@ -193,13 +216,13 @@ ${includeAnalysis.value ? '5. analysis: \u6DF1\u5EA6\u5206\u6790\uFF08\u5305\u62
   finally { processing.value = false }
 }
 
-// 生成 SEO 友好的 slug：纯中文，取原文前10个汉字
+// \u751F\u6210 SEO \u53CB\u597D\u7684 slug\uFF1A\u7EAF\u4E2D\u6587\uFF0C\u53D6\u539F\u6587\u524D10\u4E2A\u6C49\u5B57
 function generateSlug(text: string): string {
   const chars = text.replace(/[^\u4e00-\u9fff]/g, '').slice(0, 10)
   return chars || String(Date.now())
 }
 
-// 检查是否已有相同原文的摘要
+// \u68C0\u67E5\u662F\u5426\u5DF2\u6709\u76F8\u540C\u539F\u6587\u7684\u6458\u8981
 function findExistingSummary(text: string): string | null {
   const normalizedText = text.replace(/\s+/g, '')
   for (let i = 0; i < localStorage.length; i++) {
@@ -216,9 +239,9 @@ function findExistingSummary(text: string): string | null {
   return null
 }
 
-function saveSummary() {
+async function saveSummary() {
   const slug = generateSlug(inputText.value)
-  // 检查 slug 是否已存在，存在则加数字
+  // \u68C0\u67E5 slug \u662F\u5426\u5DF2\u5B58\u5728\uFF0C\u5B58\u5728\u5219\u52A0\u6570\u5B57
   let finalSlug = slug
   let counter = 1
   while (localStorage.getItem(`guji_summary_${finalSlug}`)) {
@@ -236,7 +259,30 @@ function saveSummary() {
     analysis: analysis.value,
     createdAt: new Date().toLocaleString('zh-CN')
   }
+  
+  // \u4FDD\u5B58\u5230 localStorage
   localStorage.setItem(`guji_summary_${finalSlug}`, JSON.stringify(data))
+  
+  // \u4FDD\u5B58\u5230\u6570\u636E\u5E93\uFF08\u5F02\u6B65\uFF09
+  saveSummaryToDB({
+    slug: finalSlug,
+    title: inputText.value.slice(0, 30),
+    original_text: inputText.value,
+    summary: summary.value,
+    translation: translation.value,
+    keywords: keywords.value,
+    themes: themes.value,
+    analysis: analysis.value,
+    user_id: authStore.user?.id,
+    is_public: true
+  }).then(dbSlug => {
+    if (dbSlug) {
+      console.log('Summary saved to DB:', dbSlug)
+    }
+  }).catch(e => {
+    console.warn('Failed to save to DB:', e)
+  })
+  
   savedSummaryId.value = finalSlug
   loadHistory()
 }
@@ -301,11 +347,17 @@ const uniqueChars = computed(() => {
       <button @click="saveApiKey" class="btn-primary">保存</button>
     </div>
 
-    <!-- 历史记录 -->
-    <div v-if="historyList.length" class="history-section">
-      <h3>📜 历史摘要</h3>
+    <!-- \u5386\u53F2\u8BB0\u5F55 -->
+    <div v-if="dbHistoryList.length || historyList.length" class="history-section">
+      <h3>\uD83D\uDCDC \u5386\u53F2\u6458\u8981</h3>
       <div class="history-list">
-        <div v-for="item in historyList" :key="item.id" class="history-item" @click="goToHistory(item.id)">
+        <!-- \u6570\u636E\u5E93\u8BB0\u5F55 -->
+        <div v-for="item in dbHistoryList" :key="'db-'+item.slug" class="history-item" @click="goToHistory(item.slug)">
+          <span>{{ item.original_text.slice(0, 20) }}...</span>
+          <span class="date">{{ item.created_at }}</span>
+        </div>
+        <!-- \u672C\u5730\u8BB0\u5F55 -->
+        <div v-for="item in historyList" :key="'local-'+item.id" class="history-item" @click="goToHistory(item.id)">
           <span>{{ item.text }}</span>
           <span class="date">{{ item.date }}</span>
         </div>

@@ -6,6 +6,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -75,6 +76,9 @@ const seoConfig: ToolSeoConfig = {
   isFree: true
 }
 
+// 配额检查
+const { canPerform, consume } = useQuota('text-to-speech', '古文朗读')
+
 const inputText = ref('')
 const isPlaying = ref(false)
 const isPaused = ref(false)
@@ -129,6 +133,12 @@ function loadVoices() {
 function play() {
   if (sentences.value.length === 0) return
   
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   if (isPaused.value) {
     speechSynthesis.resume()
     isPaused.value = false
@@ -136,6 +146,7 @@ function play() {
     return
   }
   
+  consume(1)
   isPlaying.value = true
   speakSentence(currentIndex.value)
 }

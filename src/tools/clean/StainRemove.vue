@@ -6,6 +6,7 @@
 import { ref } from 'vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -77,6 +78,9 @@ const seoConfig: ToolSeoConfig = {
   isFree: true
 }
 
+// 配额检查
+const { canPerform, consume } = useQuota('stain-remove', '污渍修复')
+
 const imageFile = ref<File | null>(null)
 const imageUrl = ref('')
 const resultUrl = ref('')
@@ -103,7 +107,13 @@ function loadImage(file: File) {
 
 async function processImage() {
   if (!imageFile.value) return
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
   processing.value = true
+  await consume(1)
   try {
     const img = new Image()
     img.src = imageUrl.value

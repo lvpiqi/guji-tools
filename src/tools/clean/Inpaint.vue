@@ -7,6 +7,7 @@ import { ref, computed } from 'vue'
 import FileDropzone from '@components/common/FileDropzone.vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -81,6 +82,9 @@ const seoConfig: ToolSeoConfig = {
   isOffline: true,
   isFree: true
 }
+
+// 配额检查
+const { canPerform, consume } = useQuota('inpaint', '蠹鱼眼修复')
 
 const imageFile = ref<File | null>(null)
 const imageUrl = ref<string>('')
@@ -197,7 +201,15 @@ function clearMask() {
 async function processInpaint() {
   if (!canvasRef.value || !maskCanvasRef.value) return
   
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   processing.value = true
+  
+  await consume(1)
   
   try {
     const srcCtx = canvasRef.value.getContext('2d')!

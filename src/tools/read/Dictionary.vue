@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 import { getCharacterData, type CharacterData } from '@core/services/aiContent'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -76,6 +77,9 @@ const seoConfig: ToolSeoConfig = {
   isOffline: false,
   isFree: true
 }
+
+// 配额检查
+const { canPerform, consume } = useQuota('dictionary', '划词释义')
 
 const router = useRouter()
 const inputText = ref('')
@@ -149,10 +153,18 @@ async function lookupChar(char: string) {
   if (!char || char.length !== 1) return
   if (/[，。！？、；：「」『』（）\s]/.test(char)) return
   
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   selectedChar.value = char
   loading.value = true
   error.value = null
   definition.value = null
+  
+  await consume(1)
   
   try {
     // 先查本地詞典

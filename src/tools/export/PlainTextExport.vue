@@ -6,6 +6,7 @@
 import { ref, computed } from 'vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -71,6 +72,9 @@ Markdown格式适合在GitHub、Notion等平台使用，支持标题等基本格
   isOffline: true,
   isFree: true
 }
+
+// 配额检查
+const { canPerform, consume } = useQuota('plain-text-export', '纯文本导出')
 
 const inputText = ref('')
 const processing = ref(false)
@@ -144,7 +148,14 @@ const charCount = computed(() => {
 function downloadFile() {
   if (!inputText.value.trim()) return
   
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   processing.value = true
+  consume(1)
   
   setTimeout(() => {
     const content = processText(inputText.value)

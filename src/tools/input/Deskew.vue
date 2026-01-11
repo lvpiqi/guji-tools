@@ -9,6 +9,8 @@ import ImageCompare from '@components/common/ImageCompare.vue'
 import ProgressBar from '@components/common/ProgressBar.vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import QuotaGuard from '@/components/common/QuotaGuard.vue'
+import { useQuota } from '@core/composables/useQuota'
 import { 
   initOpenCVWorker, 
   deskewInWorker, 
@@ -103,6 +105,9 @@ const seoConfig: ToolSeoConfig = {
 // OpenCV Worker 状态
 const { isLoaded: cvLoaded, isLoading: cvLoading, loadError: cvError } = useOpenCVWorkerStatus()
 
+// 配额检查
+const { canPerform, consume } = useQuota('deskew', '自动纠偏')
+
 interface Task {
   id: string
   file: File
@@ -142,6 +147,13 @@ function handleFiles(files: File[]) {
 }
 
 async function processAll() {
+  // 配额检查
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+
   processing.value = true
   progress.value = 0
 
@@ -156,6 +168,9 @@ async function processAll() {
   }
 
   const pending = tasks.value.filter(t => t.status === 'pending')
+  
+  // 消耗配额
+  await consume(pending.length)
   
   for (let i = 0; i < pending.length; i++) {
     await processTask(pending[i])

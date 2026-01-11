@@ -9,6 +9,7 @@ import FileDropzone from '@components/common/FileDropzone.vue'
 import ProgressBar from '@components/common/ProgressBar.vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -110,6 +111,9 @@ const pageSegMode = ref<number>(5)
 const currentTask = computed(() => tasks.value.find(t => t.id === selectedId.value))
 const doneCount = computed(() => tasks.value.filter(t => t.status === 'done').length)
 
+// 配额检查
+const { canPerform, consume } = useQuota('ocr-vertical', '竖排OCR')
+
 const languageOptions = [
   { value: 'chi_tra', label: '繁体中文' },
   { value: 'chi_sim', label: '简体中文' },
@@ -141,10 +145,20 @@ function handleFiles(files: File[]) {
 }
 
 async function processAll() {
+  // 配额检查
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+
   processing.value = true
   progress.value = 0
 
   const pending = tasks.value.filter(t => t.status === 'pending')
+  
+  // 消耗配额
+  await consume(pending.length)
   
   progressText.value = '正在加载OCR引擎...'
   const worker = await createWorker(language.value, 1, {

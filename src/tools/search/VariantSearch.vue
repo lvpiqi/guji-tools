@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 import { getCharacterData, type CharacterData } from '@core/services/aiContent'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -76,6 +77,9 @@ const seoConfig: ToolSeoConfig = {
   isOffline: false,
   isFree: true
 }
+
+// 配额检查
+const { canPerform, consume } = useQuota('variant-search', '异体字搜索')
 
 const router = useRouter()
 const searchChar = ref('')
@@ -164,9 +168,17 @@ const localVariants: Record<string, Partial<CharacterData>> = {
 async function search() {
   if (!searchChar.value.trim()) return
   
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   const char = searchChar.value.trim()[0]
   loading.value = true
   error.value = null
+  
+  await consume(1)
   
   try {
     // 优先使用本地数据

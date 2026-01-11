@@ -7,6 +7,10 @@ import { ref, computed } from 'vue'
 import JSZip from 'jszip'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
+
+// 配额检查
+const { canPerform, consume } = useQuota('batch-rename', '批量重命名')
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -168,7 +172,17 @@ function moveDown(index: number) {
 async function downloadZip() {
   if (files.value.length === 0) return
   
+  // 配额检查
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
   processing.value = true
+  
+  // 消耗配额
+  await consume(1)
   
   try {
     const zip = new JSZip()

@@ -98,7 +98,7 @@ const seoConfig: ToolSeoConfig = {
 
 // 工具逻辑
 const { tasks, processing, progress, addFiles, processAll, downloadAllAsZip } = useImageProcessor()
-const { canPerform, consume } = useQuota()
+const { canPerform, consume, usageHint } = useQuota('remove-finger', '去手指阴影')
 
 const selectedTask = ref<string | null>(null)
 const currentTask = computed(() => tasks.value.find(t => t.id === selectedTask.value))
@@ -115,12 +115,13 @@ function handleFiles(files: File[]) {
 }
 
 async function startProcess() {
-  if (!canPerform('processing', tasks.value.length)) {
-    alert('今日免费额度已用完，请升级Pro')
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
     return
   }
 
-  consume('processing', tasks.value.length)
+  await consume(tasks.value.length)
 
   await processAll(async (canvas) => {
     // TODO: 接入 MediaPipe + lama-wasm 实际处理

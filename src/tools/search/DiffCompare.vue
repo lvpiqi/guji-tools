@@ -6,6 +6,7 @@
 import { ref, computed } from 'vue'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
+import { useQuota } from '@core/composables/useQuota'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -75,6 +76,9 @@ const seoConfig: ToolSeoConfig = {
   isFree: true
 }
 
+// 配额检查
+const { canPerform, consume } = useQuota('diff-compare', '版本对比')
+
 const textA = ref('')
 const textB = ref('')
 const labelA = ref('版本A')
@@ -102,6 +106,14 @@ const stats = computed(() => {
 
 function compare() {
   if (!textA.value && !textB.value) return
+  
+  const check = canPerform()
+  if (!check.allowed) {
+    alert(check.reason || '使用次数已达上限')
+    return
+  }
+  
+  consume(1)
   
   const a = textA.value
   const b = textB.value
