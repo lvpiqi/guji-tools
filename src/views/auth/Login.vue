@@ -11,7 +11,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const form = ref({
-  email: '',
+  account: '',  // 邮箱或用户名
   password: '',
   remember: false,
 })
@@ -20,14 +20,14 @@ const showPassword = ref(false)
 const submitting = ref(false)
 
 const isValid = computed(() => {
-  return form.value.email && form.value.password.length >= 6
+  return form.value.account && form.value.password.length >= 6
 })
 
 async function handleSubmit() {
   if (!isValid.value || submitting.value) return
   
   submitting.value = true
-  const success = await authStore.login(form.value.email, form.value.password)
+  const success = await authStore.login(form.value.account, form.value.password)
   submitting.value = false
   
   if (success) {
@@ -48,13 +48,13 @@ async function handleSubmit() {
 
       <form @submit.prevent="handleSubmit" class="auth-form">
         <div class="form-group">
-          <label for="email">邮箱</label>
+          <label for="account">用户名 / 邮箱</label>
           <input
-            id="email"
-            v-model="form.email"
-            type="email"
-            placeholder="请输入邮箱"
-            autocomplete="email"
+            id="account"
+            v-model="form.account"
+            type="text"
+            placeholder="请输入用户名或邮箱"
+            autocomplete="username"
             required
           />
         </div>

@@ -20,6 +20,7 @@ CREATE TYPE subscription_status AS ENUM ('active', 'canceled', 'expired', 'past_
 CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username VARCHAR(50) NOT NULL,
+  email VARCHAR(255),
   avatar_url TEXT,
   role user_role DEFAULT 'user',
   plan plan_type DEFAULT 'free',
@@ -31,6 +32,8 @@ CREATE TABLE profiles (
 -- 创建索引
 CREATE INDEX idx_profiles_role ON profiles(role);
 CREATE INDEX idx_profiles_plan ON profiles(plan);
+CREATE INDEX idx_profiles_username ON profiles(username);
+CREATE INDEX idx_profiles_email ON profiles(email);
 
 -- RLS 策略
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;

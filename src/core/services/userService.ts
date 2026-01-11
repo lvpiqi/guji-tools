@@ -11,6 +11,24 @@ type UsageRecord = Database['public']['Tables']['usage_records']['Insert']
 
 export const userService = {
   /**
+   * 根据用户名获取邮箱（用于登录）
+   * profiles 表需要有 email 字段
+   */
+  async getEmailByUsername(username: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('username', username)
+      .single()
+
+    if (error || !data) {
+      return null
+    }
+
+    return (data as any).email || null
+  },
+
+  /**
    * 获取用户 Profile
    */
   async getProfile(userId: string): Promise<Profile | null> {

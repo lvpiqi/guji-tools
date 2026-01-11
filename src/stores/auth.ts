@@ -100,12 +100,16 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem(STORAGE_KEYS.MOCK_USERS, JSON.stringify(users))
   }
 
-  async function mockLogin(email: string, password: string): Promise<boolean> {
+  async function mockLogin(emailOrUsername: string, password: string): Promise<boolean> {
     const users = getMockUsers()
-    const user = users.find(u => u.email === email && u.password === password)
+    // 支持邮箱或用户名登录
+    const user = users.find(u => 
+      (u.email === emailOrUsername || u.username === emailOrUsername) && 
+      u.password === password
+    )
     
     if (!user) {
-      error.value = '邮箱或密码错误'
+      error.value = '用户名/邮箱或密码错误'
       return false
     }
 
@@ -196,8 +200,22 @@ export const useAuthStore = defineStore('auth', () => {
 
   // ==================== Supabase 模式实现 ====================
 
-  async function supabaseLogin(email: string, password: string): Promise<boolean> {
+  async function supabaseLogin(emailOrUsername: string, password: string): Promise<boolean> {
     const { authService } = await import('@core/services/authService')
+    
+    // 判断是邮箱还是用户名
+    let email = emailOrUsername
+    if (!emailOrUsername.includes('@')) {
+      // 是用户名，需要先查询对应的邮箱
+      const { userService } = await import('@core/services/userService')
+      const foundEmail = await userService.getEmailByUsername(emailOrUsername)
+      if (!foundEmail) {
+        error.value = '用户名不存在'
+        return false
+      }
+      email = foundEmail
+    }
+    
     const result = await authService.signIn(email, password)
     
     if (!result.success) {
@@ -305,14 +323,14 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // 登录
-  async function login(email: string, password: string): Promise<boolean> {
+  // 登录（支持邮箱或用户名）
+  async function login(emailOrUsername: string, password: string): Promise<boolean> {
     loading.value = true
     error.value = null
 
     const success = USE_MOCK 
-      ? await mockLogin(email, password)
-      : await supabaseLogin(email, password)
+      ? await mockLogin(emailOrUsername, password)
+      : await supabaseLogin(emailOrUsername, password)
 
     loading.value = false
     return success
