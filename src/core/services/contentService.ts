@@ -93,23 +93,33 @@ interface SummaryRow {
  * \u4ECE\u6570\u636E\u5E93\u83B7\u53D6\u6C49\u5B57\u8BE6\u60C5
  */
 export async function getCharacterFromDB(char: string): Promise<CharacterData | null> {
-  const { data, error } = await supabase
-    .from('character_data')
-    .select('*')
-    .eq('char', char)
-    .single()
+  try {
+    const { data, error } = await supabase
+      .from('character_data')
+      .select('*')
+      .eq('char', char)
+      .single()
 
-  if (error || !data) return null
+    if (error) {
+      console.log('DB query error for char:', char, error.message)
+      return null
+    }
+    
+    if (!data) {
+      console.log('No data found in DB for char:', char)
+      return null
+    }
 
-  const row = data as CharacterRow
+    console.log('Found char in DB:', char)
+    const row = data as CharacterRow
 
-  // \u589E\u52A0\u6D4F\u89C8\u6B21\u6570
-  // @ts-ignore - Supabase types not generated
-  supabase
-    .from('character_data')
-    .update({ view_count: (row.view_count || 0) + 1 })
-    .eq('char', char)
-    .then(() => {})
+    // \u589E\u52A0\u6D4F\u89C8\u6B21\u6570
+    // @ts-ignore - Supabase types not generated
+    supabase
+      .from('character_data')
+      .update({ view_count: (row.view_count || 0) + 1 })
+      .eq('char', char)
+      .then(() => {})
 
   return {
     id: row.id,
