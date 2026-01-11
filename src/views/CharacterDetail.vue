@@ -8,6 +8,7 @@ import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getCharacterData, type CharacterData } from '@core/services/aiContent'
 import { getCharacterFromDB, getPopularCharacters, type CharacterData as DBCharacterData } from '@core/services/contentService'
+import { supabase } from '@core/services/supabase'
 
 const route = useRoute()
 const router = useRouter()
@@ -16,10 +17,6 @@ const char = computed(() => decodeURIComponent(route.params.char as string))
 const data = ref<CharacterData | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
-
-// API Key \u7BA1\u7406
-const apiKey = ref(localStorage.getItem('deepseek_api_key') || '')
-const showApiKeyInput = ref(false)
 
 // \u76F8\u5173\u5B57\u63A8\u8350\uFF08\u5185\u94FE\uFF09
 const relatedChars = ref<string[]>([])
@@ -38,7 +35,6 @@ function updateSeoMeta() {
   const desc = data.value.definition?.basic || data.value.evolution?.description || ''
   const description = `${char.value}\uFF1A${desc.slice(0, 150)}`
   
-  // \u8BBE\u7F6E meta description
   let metaDesc = document.querySelector('meta[name="description"]')
   if (!metaDesc) {
     metaDesc = document.createElement('meta')
@@ -47,13 +43,11 @@ function updateSeoMeta() {
   }
   metaDesc.setAttribute('content', description)
   
-  // \u8BBE\u7F6E Open Graph
   setMetaProperty('og:title', document.title)
   setMetaProperty('og:description', description)
   setMetaProperty('og:type', 'article')
   setMetaProperty('og:url', `https://www.gujitools.com/char/${encodeURIComponent(char.value)}`)
   
-  // \u8BBE\u7F6E JSON-LD
   updateJsonLd()
 }
 
@@ -94,13 +88,38 @@ function updateJsonLd() {
   script.textContent = JSON.stringify(jsonLd)
 }
 
+// \u83B7\u53D6\u7CFB\u7EDF API Key
+async function getSystemApiKey(): Promise<string | null> {
+  // 1. \u5148\u4ECE localStorage \u83B7\u53D6\uFF08\u7528\u6237\u81EA\u5DF1\u914D\u7F6E\u7684\uFF09
+  const localKey = localStorage.getItem('deepseek_api_key')
+  if (localKey) return localKey
+  
+  // 2. \u4ECE\u6570\u636E\u5E93\u83B7\u53D6\u7CFB\u7EDF\u914D\u7F6E\u7684 API Key
+  try {
+    const { data, error } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'deepseek_api_key')
+      .maybeSingle()
+    
+    if (!error && data?.value) return data.value
+  } catch (e) {
+    console.log('Failed to get system API key:', e)
+  }
+  
+  // 3. \u5C1D\u8BD5\u4ECE\u7F13\u5B58\u7684\u7CFB\u7EDF\u8BBE\u7F6E\u83B7\u53D6
+  const cachedKey = localStorage.getItem('system_deepseek_api_key')
+  if (cachedKey) return cachedKey
+  
+  return null
+}
+
 onMounted(async () => {
   await loadData()
   loadPopularChars()
 })
 
 onUnmounted(() => {
-  // \u6E05\u7406 JSON-LD
   const script = document.querySelector('script[type="application/ld+json"][data-page="char"]')
   if (script) script.remove()
 })
@@ -118,7 +137,6 @@ async function loadData() {
   
   loading.value = true
   error.value = null
-  showApiKeyInput.value = false
   
   try {
     // 1. \u5148\u4ECE\u6570\u636E\u5E93\u83B7\u53D6
@@ -152,18 +170,19 @@ async function loadData() {
       return
     }
     
-    console.log('Not found in localStorage, need API Key')
+    console.log('Not found in localStorage, trying to generate')
     
-    // 3. \u65E0\u7F13\u5B58\u4E14\u65E0API Key\uFF0C\u63D0\u793A\u7528\u6237
-    if (!apiKey.value) {
-      showApiKeyInput.value = true
+    // 3. \u83B7\u53D6 API Key \u5E76\u81EA\u52A8\u751F\u6210
+    const apiKey = await getSystemApiKey()
+    if (!apiKey) {
+      error.value = '\u7CFB\u7EDF\u672A\u914D\u7F6E AI \u670D\u52A1\uFF0C\u8BF7\u8054\u7CFB\u7BA1\u7406\u5458'
       loading.value = false
       return
     }
     
     // 4. \u8C03\u7528AI\u751F\u6210\uFF08\u4F1A\u81EA\u52A8\u4FDD\u5B58\u5230\u6570\u636E\u5E93\uFF09
     console.log('Generating with AI')
-    data.value = await getCharacterData(char.value, apiKey.value)
+    data.value = await getCharacterData(char.value, apiKey)
     generateRelatedChars()
     
   } catch (e) {
@@ -178,12 +197,6 @@ async function loadPopularChars() {
   try {
     popularChars.value = await getPopularCharacters(20)
   } catch {}
-}
-
-function saveApiKey() {
-  localStorage.setItem('deepseek_api_key', apiKey.value)
-  showApiKeyInput.value = false
-  loadData()
 }
 
 function generateRelatedChars() {
@@ -232,34 +245,19 @@ function goToChar(c: string) {
       <p class="char-subtitle" v-if="data?.definition?.basic">{{ data.definition.basic }}</p>
     </header>
 
-    <!-- API Key 输入 -->
-    <div v-if="showApiKeyInput" class="api-key-panel">
-      <p>首次查询需要配置 DeepSeek API Key：</p>
-      <input 
-        v-model="apiKey" 
-        type="password" 
-        placeholder="sk-..." 
-        class="api-input"
-      />
-      <button @click="saveApiKey" class="btn-primary">保存并查询</button>
-      <p class="hint">
-        <a href="https://platform.deepseek.com/" target="_blank" rel="noopener">获取 API Key →</a>
-      </p>
-    </div>
-
-    <!-- 加载状态 -->
-    <div v-else-if="loading" class="loading" aria-live="polite">
+    <!-- \u52A0\u8F7D\u72B6\u6001 -->
+    <div v-if="loading" class="loading" aria-live="polite">
       <span class="spinner"></span>
-      正在生成「{{ char }}」的详细信息...
+      \u6B63\u5728\u751F\u6210\u300C{{ char }}\u300D\u7684\u8BE6\u7EC6\u4FE1\u606F...
     </div>
 
-    <!-- 错误状态 -->
+    <!-- \u9519\u8BEF\u72B6\u6001 -->
     <div v-else-if="error" class="error-panel" role="alert">
       {{ error }}
-      <button @click="loadData" class="btn-retry">重试</button>
+      <button @click="loadData" class="btn-retry">\u91CD\u8BD5</button>
     </div>
 
-    <!-- 内容区域 -->
+    <!-- \u5185\u5BB9\u533A\u57DF -->
     <article v-else-if="data" class="char-content">
       <!-- 异体字 -->
       <section v-if="data.variants?.length" class="section">

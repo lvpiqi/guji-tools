@@ -98,7 +98,7 @@ export async function getCharacterFromDB(char: string): Promise<CharacterData | 
       .from('character_data')
       .select('*')
       .eq('char', char)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.log('DB query error for char:', char, error.message)
@@ -113,11 +113,10 @@ export async function getCharacterFromDB(char: string): Promise<CharacterData | 
     console.log('Found char in DB:', char)
     const row = data as CharacterRow
 
-    // \u589E\u52A0\u6D4F\u89C8\u6B21\u6570
-    // @ts-ignore - Supabase types not generated
+    // \u589E\u52A0\u6D4F\u89C8\u6B21\u6570 - \u5F02\u6B65\u6267\u884C\uFF0C\u4E0D\u963B\u585E
     supabase
       .from('character_data')
-      .update({ view_count: (row.view_count || 0) + 1 })
+      .update({ view_count: (row.view_count || 0) + 1 } as any)
       .eq('char', char)
       .then(() => {})
 
@@ -144,7 +143,6 @@ export async function getCharacterFromDB(char: string): Promise<CharacterData | 
  */
 export async function saveCharacterToDB(data: CharacterData): Promise<boolean> {
   try {
-    // @ts-ignore - Supabase types not generated
     const { error } = await supabase
       .from('character_data')
       .upsert({
@@ -155,7 +153,7 @@ export async function saveCharacterToDB(data: CharacterData): Promise<boolean> {
         rhyme: data.rhyme || null,
         source: data.source,
         updated_at: new Date().toISOString()
-      }, {
+      } as any, {
         onConflict: 'char'
       })
 
@@ -256,17 +254,16 @@ export async function getSummaryFromDB(slug: string): Promise<SummaryData | null
     .from('summary_data')
     .select('*')
     .eq('slug', slug)
-    .single()
+    .maybeSingle()
 
   if (error || !data) return null
 
   const row = data as SummaryRow
 
-  // \u589E\u52A0\u6D4F\u89C8\u6B21\u6570
-  // @ts-ignore - Supabase types not generated
+  // \u589E\u52A0\u6D4F\u89C8\u6B21\u6570 - \u5F02\u6B65\u6267\u884C
   supabase
     .from('summary_data')
-    .update({ view_count: (row.view_count || 0) + 1 })
+    .update({ view_count: (row.view_count || 0) + 1 } as any)
     .eq('slug', slug)
     .then(() => {})
 
@@ -295,7 +292,6 @@ export async function saveSummaryToDB(data: Omit<SummaryData, 'slug'> & { slug?:
   const slug = data.slug || generateSlug(data.original_text)
   
   try {
-    // @ts-ignore - Supabase types not generated
     const { error } = await supabase
       .from('summary_data')
       .upsert({
@@ -310,7 +306,7 @@ export async function saveSummaryToDB(data: Omit<SummaryData, 'slug'> & { slug?:
         user_id: data.user_id || null,
         is_public: data.is_public ?? true,
         updated_at: new Date().toISOString()
-      }, {
+      } as any, {
         onConflict: 'slug'
       })
 

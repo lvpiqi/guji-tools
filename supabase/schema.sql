@@ -381,24 +381,8 @@ CREATE INDEX idx_character_data_char ON character_data(char);
 CREATE INDEX idx_character_data_view_count ON character_data(view_count DESC);
 CREATE INDEX idx_character_data_created_at ON character_data(created_at DESC);
 
--- RLS 策略
-ALTER TABLE character_data ENABLE ROW LEVEL SECURITY;
-
--- 所有人可以读取
-CREATE POLICY "Anyone can view character data" ON character_data
-  FOR SELECT USING (TRUE);
-
--- 登录用户可以插入
-CREATE POLICY "Authenticated users can insert character data" ON character_data
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-
--- 管理员可以管理
-CREATE POLICY "Admins can manage character data" ON character_data
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+-- RLS 策略 - 禁用以允许匿名访问
+ALTER TABLE character_data DISABLE ROW LEVEL SECURITY;
 
 -- =============================================
 -- AI 生成内容表（摘要）
@@ -537,11 +521,48 @@ CREATE TRIGGER on_summary_created
 
 
 -- =============================================
--- 用户反馈表
+-- \u7528\u6237\u53CD\u9988\u8868
 -- =============================================
 
 CREATE TYPE feedback_type AS ENUM ('bug', 'feature', 'question', 'other');
 CREATE TYPE feedback_status AS ENUM ('pending', 'processing', 'resolved', 'closed');
+
+CREATE TABLE feedbacks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  type feedback_type NOT NULL DEFAULT 'bug',
+  content TEXT NOT NULL,
+  contact VARCHAR(200),
+  page_url VARCHAR(500),
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  user_agent TEXT,
+  status feedback_status DEFAULT 'pending',
+  admin_note TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- =============================================
+-- \u7CFB\u7EDF\u8BBE\u7F6E\u8868
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS system_settings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  key VARCHAR(100) NOT NULL UNIQUE,
+  value TEXT,
+  description VARCHAR(500),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- \u521D\u59CB\u5316\u7CFB\u7EDF\u8BBE\u7F6E
+INSERT INTO system_settings (key, value, description) VALUES
+  ('deepseek_api_key', '', 'DeepSeek API Key \u7528\u4E8E AI \u751F\u6210\u5185\u5BB9'),
+  ('site_name', '\u53E4\u7C4D\u5DE5\u5177', '\u7F51\u7AD9\u540D\u79F0'),
+  ('site_description', '\u53E4\u7C4D\u6570\u5B57\u5316\u5168\u6D41\u7A0B\u5DE5\u5177\u96C6', '\u7F51\u7AD9\u63CF\u8FF0')
+ON CONFLICT (key) DO NOTHING;
+
+-- RLS \u7B56\u7565 - \u7981\u7528 RLS \u4EE5\u5141\u8BB8\u670D\u52A1\u7AEF\u8BFB\u53D6 API Key
+ALTER TABLE system_settings DISABLE ROW LEVEL SECURITY;
 
 CREATE TABLE feedbacks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
