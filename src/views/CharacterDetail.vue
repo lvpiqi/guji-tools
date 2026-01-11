@@ -172,22 +172,22 @@ async function loadData() {
     
     console.log('Not found in localStorage, trying to generate')
     
-    // 3. \u83B7\u53D6 API Key \u5E76\u81EA\u52A8\u751F\u6210
+    // 3. 获取 API Key 并自动生成
     const apiKey = await getSystemApiKey()
     if (!apiKey) {
-      error.value = '\u7CFB\u7EDF\u672A\u914D\u7F6E AI \u670D\u52A1\uFF0C\u8BF7\u8054\u7CFB\u7BA1\u7406\u5458'
+      error.value = '系统未配置 AI 服务，请联系管理员'
       loading.value = false
       return
     }
     
-    // 4. \u8C03\u7528AI\u751F\u6210\uFF08\u4F1A\u81EA\u52A8\u4FDD\u5B58\u5230\u6570\u636E\u5E93\uFF09
+    // 4. 调用AI生成（会自动保存到数据库）
     console.log('Generating with AI')
     data.value = await getCharacterData(char.value, apiKey)
     generateRelatedChars()
     
   } catch (e) {
     console.error('loadData error:', e)
-    error.value = e instanceof Error ? e.message : '\u52A0\u8F7D\u5931\u8D25'
+    error.value = e instanceof Error ? e.message : '加载失败'
   } finally {
     loading.value = false
   }
@@ -245,19 +245,19 @@ function goToChar(c: string) {
       <p class="char-subtitle" v-if="data?.definition?.basic">{{ data.definition.basic }}</p>
     </header>
 
-    <!-- \u52A0\u8F7D\u72B6\u6001 -->
+    <!-- 加载状态 -->
     <div v-if="loading" class="loading" aria-live="polite">
       <span class="spinner"></span>
-      \u6B63\u5728\u751F\u6210\u300C{{ char }}\u300D\u7684\u8BE6\u7EC6\u4FE1\u606F...
+      正在生成「{{ char }}」的详细信息...
     </div>
 
-    <!-- \u9519\u8BEF\u72B6\u6001 -->
+    <!-- 错误状态 -->
     <div v-else-if="error" class="error-panel" role="alert">
       {{ error }}
-      <button @click="loadData" class="btn-retry">\u91CD\u8BD5</button>
+      <button @click="loadData" class="btn-retry">重试</button>
     </div>
 
-    <!-- \u5185\u5BB9\u533A\u57DF -->
+    <!-- 内容区域 -->
     <article v-else-if="data" class="char-content">
       <!-- 异体字 -->
       <section v-if="data.variants?.length" class="section">

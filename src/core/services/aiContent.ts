@@ -113,25 +113,29 @@ async function generateWithAI(
 ): Promise<Partial<CharacterData>> {
   const prompt = buildPrompt(char, fields)
   
+  // 确保 API Key 是纯 ASCII
+  const cleanApiKey = apiKey.trim()
+  
+  const requestBody = {
+    model: 'deepseek-chat',
+    messages: [
+      {
+        role: 'system',
+        content: '你是一个专业的古汉语和文字学专家。请根据用户查询的汉字，提供准确的学术信息。回复必须是有效的JSON格式，不要包含任何其他文字。'
+      },
+      { role: 'user', content: prompt }
+    ],
+    temperature: 0.3,
+    max_tokens: 2000
+  }
+  
   const response = await fetch(DEEPSEEK_API, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
+      'Content-Type': 'application/json; charset=utf-8',
+      'Authorization': 'Bearer ' + cleanApiKey
     },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages: [
-        {
-          role: 'system',
-          content: `你是一个专业的古汉语和文字学专家。请根据用户查询的汉字，提供准确的学术信息。
-回复必须是有效的JSON格式，不要包含任何其他文字。`
-        },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.3,
-      max_tokens: 2000
-    })
+    body: JSON.stringify(requestBody)
   })
 
   if (!response.ok) {
@@ -158,7 +162,7 @@ function buildPrompt(char: string, fields: string[]): string {
   const parts: string[] = [`请分析汉字「${char}」，返回JSON格式数据：\n{`]
   
   if (fields.includes('variants')) {
-    parts.push(`  "variants": ["异体字1", "异体字2", ...],  // 该字的所有异体字、古字、俗字`)
+    parts.push('  "variants": ["异体字1", "异体字2", ...],  // 该字的所有异体字、古字、俗字')
   }
   
   if (fields.includes('definition')) {
@@ -172,7 +176,7 @@ function buildPrompt(char: string, fields: string[]): string {
   if (fields.includes('evolution')) {
     parts.push(`  "evolution": {
     "oracle": "甲骨文字形描述（如有）",
-    "bronze": "金文字形描述（如有）", 
+    "bronze": "金文字形描述（如有）",
     "seal": "篆书字形描述",
     "clerical": "隶书字形描述",
     "regular": "楷书字形描述",
