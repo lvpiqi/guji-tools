@@ -284,8 +284,8 @@ const totalSaved = computed(() => {
         <button @click="downloadOne(r)" class="download-btn">下载</button>
       </div>
     </div>
-
-    </ToolPageSeo>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
