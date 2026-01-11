@@ -1,0 +1,17 @@
+# robots.txt for gujitools.com
+# 古籍工具 - 搜索引擎爬虫配置
+
+User-agent: *
+Allow: /
+
+# 禁止爬取的路径
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /user/
+Disallow: /api/
+
+# 站点地图
+Sitemap: https://www.gujitools.com/sitemap.xml
+
+# 爬取延迟（秒）
+Crawl-delay: 1
