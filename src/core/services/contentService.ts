@@ -121,17 +121,21 @@ export async function getCharacterFromDB(char: string): Promise<CharacterData | 
       .eq('char', char)
       .then(() => {})
 
-  return {
-    id: row.id,
-    char: row.char,
-    variants: row.variants || undefined,
-    definition: row.definition || undefined,
-    evolution: row.evolution || undefined,
-    rhyme: row.rhyme || undefined,
-    source: row.source as 'ai' | 'local',
-    view_count: row.view_count,
-    created_at: row.created_at,
-    updated_at: row.updated_at
+    return {
+      id: row.id,
+      char: row.char,
+      variants: row.variants || undefined,
+      definition: row.definition || undefined,
+      evolution: row.evolution || undefined,
+      rhyme: row.rhyme || undefined,
+      source: row.source as 'ai' | 'local',
+      view_count: row.view_count,
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    }
+  } catch (e) {
+    console.error('getCharacterFromDB exception:', e)
+    return null
   }
 }
 
