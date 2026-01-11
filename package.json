@@ -5,8 +5,11 @@
   "description": "古籍线上工具集 - 纸到电子的全流程解决方案",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/generate-html.js",
+    "build": "vite build && node scripts/generate-html.js && node scripts/generate-seo-pages.js",
     "build:only": "vite build",
+    "build:seo": "node scripts/generate-seo-pages.js",
+    "build:incremental": "node scripts/incremental-build.js",
+    "export:db": "node scripts/export-db-data.js",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx,.vue",
     "type-check": "vue-tsc --noEmit"
@@ -26,6 +29,7 @@
     "@typescript-eslint/parser": "^6.0.0",
     "@vitejs/plugin-vue": "^5.0.0",
     "autoprefixer": "^10.4.0",
+    "dotenv": "^16.3.1",
     "eslint": "^8.56.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",

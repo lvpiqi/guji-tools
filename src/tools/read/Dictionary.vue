@@ -3,12 +3,13 @@
  * 划词释义工具
  * SEO 优化版本
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCharacterData, type CharacterData } from '@core/services/aiContent'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
 import { useQuota } from '@core/composables/useQuota'
+import { useApiKey, cleanApiKey } from '@core/services/apiKeyService'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -81,16 +82,15 @@ const seoConfig: ToolSeoConfig = {
 // 配额检查
 const { canPerform, consume } = useQuota('dictionary', '划词释义')
 
+// API Key
+const { apiKey, loading: apiKeyLoading, error: apiKeyError } = useApiKey()
+
 const router = useRouter()
 const inputText = ref('')
 const selectedChar = ref('')
 const definition = ref<CharacterData | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
-
-// API Key
-const apiKey = ref(localStorage.getItem('deepseek_api_key') || '')
-const showApiKeyInput = ref(false)
 
 // 简单的本地词典（示例数据）
 const localDict: Record<string, Partial<CharacterData>> = {
@@ -187,25 +187,18 @@ async function lookupChar(char: string) {
     
     // 无API Key时提示
     if (!apiKey.value) {
-      showApiKeyInput.value = true
+      error.value = '系统未配置 AI 服务，请联系管理员'
       return
     }
     
     // 调用AI生成
-    definition.value = await getCharacterData(char, apiKey.value, ['definition', 'variants', 'rhyme'])
+    const cleanKey = cleanApiKey(apiKey.value)
+    definition.value = await getCharacterData(selectedChar.value, cleanKey, ['definition', 'variants', 'rhyme'])
     
   } catch (e) {
     error.value = e instanceof Error ? e.message : '查询失败'
   } finally {
     loading.value = false
-  }
-}
-
-function saveApiKey() {
-  localStorage.setItem('deepseek_api_key', apiKey.value)
-  showApiKeyInput.value = false
-  if (selectedChar.value) {
-    lookupChar(selectedChar.value)
   }
 }
 
@@ -253,12 +246,12 @@ function clearAll() {
   <ToolPageSeo :config="seoConfig">
     <div class="tool-body">
 
-    <!-- API Key 输入 -->
-    <div v-if="showApiKeyInput" class="api-panel">
-      <p>查询新字需要配置 DeepSeek API Key：</p>
-      <input v-model="apiKey" type="password" placeholder="sk-..." class="api-input" />
-      <button @click="saveApiKey" class="btn-primary">保存</button>
-      <p class="hint"><a href="https://platform.deepseek.com/" target="_blank">获取 API Key →</a></p>
+    <!-- API Key 加载提示 -->
+    <div v-if="apiKeyLoading" class="api-panel">
+      <p>正在加载 AI 配置...</p>
+    </div>
+    <div v-else-if="!apiKey" class="api-panel">
+      <p>⚠️ 系统未配置 AI 服务，仅能查询内置词典</p>
     </div>
 
     <div class="tool-body">

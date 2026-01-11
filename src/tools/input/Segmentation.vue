@@ -8,9 +8,13 @@ import { useRouter } from 'vue-router'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
 import { useQuota } from '@core/composables/useQuota'
+import { useApiKey, cleanApiKey } from '@core/services/apiKeyService'
 
 // 配额检查
 const { canPerform, consume } = useQuota('segmentation', '古汉语分词')
+
+// API Key
+const { apiKey, loading: apiKeyLoading } = useApiKey()
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -89,9 +93,6 @@ const inputText = ref('')
 const segmentedResult = ref<Array<{ word: string; pos: string; meaning?: string }>>([])
 const processing = ref(false)
 const showMeaning = ref(true)
-
-// API Key
-const apiKey = ref(localStorage.getItem('deepseek_api_key') || '')
 const useAI = ref(true)
 
 // 词性颜色映射
@@ -224,11 +225,13 @@ function segmentLocal(text: string): Array<{ word: string; pos: string; meaning?
 
 // AI 分词
 async function segmentWithAI(text: string): Promise<Array<{ word: string; pos: string; meaning?: string }>> {
+  const cleanKey = cleanApiKey(apiKey.value || '')
+  
   const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey.value}`
+      'Authorization': 'Bearer ' + cleanKey
     },
     body: JSON.stringify({
       model: 'deepseek-chat',
@@ -292,11 +295,6 @@ async function doSegment() {
   }
 }
 
-function saveApiKey() {
-  localStorage.setItem('deepseek_api_key', apiKey.value)
-  doSegment()
-}
-
 function goToCharDetail(word: string) {
   if (word.length === 1) {
     router.push(`/char/${encodeURIComponent(word)}`)
@@ -336,12 +334,12 @@ function useExample(text: string) {
       </label>
     </div>
 
-    <!-- API Key 输入 -->
-    <div v-if="useAI && !apiKey" class="api-panel">
-      <p>使用 AI 功能需要配置 DeepSeek API Key：</p>
-      <input v-model="apiKey" type="password" placeholder="sk-..." class="api-input" />
-      <button @click="saveApiKey" class="btn-primary">保存</button>
-      <p class="hint"><a href="https://platform.deepseek.com/" target="_blank">获取 API Key</a></p>
+    <!-- API Key 加载提示 -->
+    <div v-if="apiKeyLoading" class="api-panel">
+      <p>正在加载 AI 配置...</p>
+    </div>
+    <div v-else-if="useAI && !apiKey" class="api-panel">
+      <p>⚠️ 系统未配置 AI 服务，请联系管理员配置 API Key</p>
     </div>
 
     <!-- 输入区域 -->

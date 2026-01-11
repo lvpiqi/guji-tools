@@ -3,14 +3,18 @@
  * 自动翻译工具
  * SEO 优化版本
  */
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
 import { useQuota } from '@core/composables/useQuota'
+import { useApiKey, cleanApiKey } from '@core/services/apiKeyService'
 
 // 配额检查
 const { canPerform, consume } = useQuota('translate', '古文翻译')
+
+// API Key
+const { apiKey, loading: apiKeyLoading, error: apiKeyError } = useApiKey()
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -87,10 +91,13 @@ const english = ref('')
 const processing = ref(false)
 const targetLang = ref<'modern' | 'english' | 'both'>('both')
 const style = ref<'literal' | 'free'>('literal')
-const apiKey = ref(localStorage.getItem('deepseek_api_key') || '')
 
 async function doTranslate() {
-  if (!inputText.value.trim() || !apiKey.value) return
+  if (!inputText.value.trim()) return
+  if (!apiKey.value) {
+    alert('系统未配置 AI 服务，请联系管理员')
+    return
+  }
   
   // 配额检查
   const check = canPerform()
@@ -106,12 +113,14 @@ async function doTranslate() {
   // 消耗配额
   await consume(1)
   
+  const cleanKey = cleanApiKey(apiKey.value)
+  
   try {
     const styleDesc = style.value === 'literal' ? '\u76F4\u8BD1' : '\u610F\u8BD1'
     if (targetLang.value === 'modern' || targetLang.value === 'both') {
       const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey.value}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cleanKey },
         body: JSON.stringify({
           model: 'deepseek-chat',
           messages: [
@@ -126,7 +135,7 @@ async function doTranslate() {
       const src = modernChinese.value || inputText.value
       const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey.value}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cleanKey },
         body: JSON.stringify({
           model: 'deepseek-chat',
           messages: [
@@ -140,7 +149,6 @@ async function doTranslate() {
   } catch { alert('\u7FFB\u8BD1\u5931\u8D25') }
   finally { processing.value = false }
 }
-function saveApiKey() { localStorage.setItem('deepseek_api_key', apiKey.value); doTranslate() }
 function goToChar(c: string) { if (/[\u4e00-\u9fff]/.test(c)) router.push(`/char/${encodeURIComponent(c)}`) }
 function copy(t: string) { navigator.clipboard.writeText(t); alert('\u5DF2\u590D\u5236') }
 function clear() { inputText.value = ''; modernChinese.value = ''; english.value = '' }
@@ -168,10 +176,11 @@ function useEx(t: string) { inputText.value = t; doTranslate() }
           </div>
         </div>
       </div>
-      <div v-if="!apiKey" class="api-panel">
-        <p>需要配置 DeepSeek API Key：</p>
-        <input v-model="apiKey" type="password" placeholder="sk-..." class="api-input" />
-        <button @click="saveApiKey" class="btn-primary">保存</button>
+      <div v-if="apiKeyLoading" class="api-panel">
+        <p>正在加载 AI 配置...</p>
+      </div>
+      <div v-else-if="!apiKey" class="api-panel">
+        <p>⚠️ 系统未配置 AI 服务，请联系管理员配置 API Key</p>
       </div>
       <div class="input-section">
         <textarea v-model="inputText" placeholder="请输入文言文..." rows="4"></textarea>

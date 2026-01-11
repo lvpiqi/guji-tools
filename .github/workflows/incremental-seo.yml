@@ -1,0 +1,54 @@
+# 自动增量构建 SEO 页面
+# 每小时检查数据库，为新增的汉字和摘要生成静态 HTML
+
+name: Incremental SEO Build
+
+on:
+  # 定时运行：每小时的第 5 分钟
+  schedule:
+    - cron: '5 * * * *'
+  
+  # 手动触发
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: guji-tools/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: guji-tools
+        run: npm ci
+      
+      - name: Build project
+        working-directory: guji-tools
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build:only
+      
+      - name: Run incremental build
+        working-directory: guji-tools
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build:incremental
+      
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir: './guji-tools/dist'
+          production-deploy: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

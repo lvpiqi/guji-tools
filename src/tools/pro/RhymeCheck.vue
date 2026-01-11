@@ -9,6 +9,7 @@ import { getCharacterData, type CharacterData } from '@core/services/aiContent'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
 import { useQuota } from '@core/composables/useQuota'
+import { useApiKey, cleanApiKey } from '@core/services/apiKeyService'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -81,13 +82,13 @@ const seoConfig: ToolSeoConfig = {
 // 配额检查
 const { canPerform, consume } = useQuota('rhyme-check', '押韵检测')
 
+// API Key
+const { apiKey, loading: apiKeyLoading } = useApiKey()
+
 const router = useRouter()
 const inputText = ref('')
 const result = ref<RhymeResult | null>(null)
 const loading = ref(false)
-
-// API Key
-const apiKey = ref(localStorage.getItem('deepseek_api_key') || '')
 
 interface RhymeChar {
   char: string
@@ -217,7 +218,8 @@ async function analyze() {
       // 有API Key则调用AI
       if (apiKey.value) {
         try {
-          const data = await getCharacterData(lastChar, apiKey.value, ['rhyme'])
+          const cleanKey = cleanApiKey(apiKey.value)
+          const data = await getCharacterData(lastChar, cleanKey, ['rhyme'])
           if (data.rhyme) {
             rhymeChars.push({
               char: lastChar,
@@ -296,26 +298,18 @@ function clearAll() {
   inputText.value = ''
   result.value = null
 }
-
-function saveApiKey(key: string) {
-  apiKey.value = key
-  localStorage.setItem('deepseek_api_key', key)
-}
 </script>
 
 <template>
   <ToolPageSeo :config="seoConfig">
     <div class="tool-body">
 
-    <!-- API Key 提示 -->
-    <div v-if="!apiKey" class="api-hint">
-      💡 配置 <a href="https://platform.deepseek.com/" target="_blank">DeepSeek API Key</a> 可自动查询未收录字的韵部
-      <input 
-        type="password" 
-        placeholder="sk-..." 
-        class="api-input"
-        @change="(e) => saveApiKey((e.target as HTMLInputElement).value)"
-      />
+    <!-- API Key 加载提示 -->
+    <div v-if="apiKeyLoading" class="api-hint">
+      正在加载 AI 配置...
+    </div>
+    <div v-else-if="!apiKey" class="api-hint">
+      ⚠️ 系统未配置 AI 服务，未收录字的韵部将显示为「未知」
     </div>
 
     <div class="tool-body">

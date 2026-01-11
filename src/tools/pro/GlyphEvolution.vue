@@ -9,6 +9,7 @@ import { getCharacterData, type CharacterData } from '@core/services/aiContent'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
 import { useQuota } from '@core/composables/useQuota'
+import { useApiKey, cleanApiKey } from '@core/services/apiKeyService'
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -77,15 +78,14 @@ const seoConfig: ToolSeoConfig = {
 // 配额检查
 const { canPerform, consume } = useQuota('glyph-evolution', '字形演变')
 
+// API Key
+const { apiKey, loading: apiKeyLoading } = useApiKey()
+
 const router = useRouter()
 const searchChar = ref('')
 const result = ref<CharacterData | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
-
-// API Key
-const apiKey = ref(localStorage.getItem('deepseek_api_key') || '')
-const showApiKeyInput = ref(false)
 
 // 本地示例数据（无API时使用）
 const localData: Record<string, Partial<CharacterData>> = {
@@ -201,25 +201,20 @@ async function search() {
     
     // 无API Key时提示
     if (!apiKey.value) {
-      showApiKeyInput.value = true
+      error.value = '系统未配置 AI 服务，请联系管理员'
       loading.value = false
       return
     }
     
     // 调用AI生成
-    result.value = await getCharacterData(char, apiKey.value, ['evolution', 'definition'])
+    const cleanKey = cleanApiKey(apiKey.value)
+    result.value = await getCharacterData(char, cleanKey, ['evolution', 'definition'])
     
   } catch (e) {
     error.value = e instanceof Error ? e.message : '查询失败'
   } finally {
     loading.value = false
   }
-}
-
-function saveApiKey() {
-  localStorage.setItem('deepseek_api_key', apiKey.value)
-  showApiKeyInput.value = false
-  search()
 }
 
 function searchGlyph(char: string) {
@@ -272,12 +267,12 @@ function goToDetailPage() {
       </div>
     </div>
 
-    <!-- API Key 输入 -->
-    <div v-if="showApiKeyInput" class="api-panel">
-      <p>查询新字需要配置 DeepSeek API Key：</p>
-      <input v-model="apiKey" type="password" placeholder="sk-..." class="api-input" />
-      <button @click="saveApiKey" class="btn-primary">保存并查询</button>
-      <p class="hint"><a href="https://platform.deepseek.com/" target="_blank">获取 API Key →</a></p>
+    <!-- API Key 加载提示 -->
+    <div v-if="apiKeyLoading" class="api-panel">
+      <p>正在加载 AI 配置...</p>
+    </div>
+    <div v-else-if="!apiKey && !localData[searchChar]" class="api-panel">
+      <p>⚠️ 系统未配置 AI 服务，仅能查询内置示例字</p>
     </div>
 
     <!-- 错误提示 -->
@@ -334,9 +329,9 @@ function goToDetailPage() {
       </div>
     </div>
 
-    <div v-else-if="searchChar && !loading && !showApiKeyInput" class="no-result">
+    <div v-else-if="searchChar && !loading && !apiKeyLoading" class="no-result">
       <p>未找到「{{ searchChar }}」的数据</p>
-      <p class="hint">配置 API Key 后可自动生成</p>
+      <p v-if="!apiKey" class="hint">系统未配置 AI 服务，请联系管理员</p>
     </div>
 
     <!-- 说明 -->

@@ -1,19 +1,23 @@
 <script setup lang="ts">
 /**
- * \u81EA\u52A8\u6458\u8981\u5DE5\u5177
- * SEO \u4F18\u5316\u7248\u672C - \u4FDD\u5B58\u5230\u6570\u636E\u5E93
+ * 自动摘要工具
+ * SEO 优化版本 - 保存到数据库
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
 import ToolFeedback from '@/components/common/ToolFeedback.vue'
 import { useQuota } from '@core/composables/useQuota'
 import { saveSummaryToDB, getUserSummaries, type SummaryData } from '@core/services/contentService'
 import { useAuthStore } from '@/stores/auth'
+import { useApiKey, cleanApiKey } from '@core/services/apiKeyService'
 
 // \u914D\u989D\u68C0\u67E5
 const { canPerform, consume } = useQuota('summary', '\u81EA\u52A8\u6458\u8981')
 const authStore = useAuthStore()
+
+// API Key
+const { apiKey, loading: apiKeyLoading } = useApiKey()
 
 // SEO 配置
 const seoConfig: ToolSeoConfig = {
@@ -94,10 +98,13 @@ const processing = ref(false)
 const summaryLength = ref<'medium' | 'long' | 'full'>('long')
 const includeTranslation = ref(true)
 const includeAnalysis = ref(true)
-const apiKey = ref(localStorage.getItem('deepseek_api_key') || '')
 const savedSummaryId = ref('')
 const historyList = ref<Array<{id: string, text: string, date: string}>>([])
 const dbHistoryList = ref<SummaryData[]>([])
+
+onMounted(() => {
+  loadHistory()
+})
 
 const lengthMap: Record<string, string> = { 
   medium: '100-150\u5B57', 
@@ -105,7 +112,7 @@ const lengthMap: Record<string, string> = {
   full: '500\u5B57\u4EE5\u4E0A\uFF0C\u5168\u9762\u8BE6\u7EC6' 
 }
 
-// \u52A0\u8F7D\u5386\u53F2\u8BB0\u5F55
+// 加载历史记录
 async function loadHistory() {
   // \u4ECE\u6570\u636E\u5E93\u52A0\u8F7D
   if (authStore.user?.id) {
@@ -127,7 +134,6 @@ async function loadHistory() {
   }
   historyList.value = list.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10)
 }
-loadHistory()
 
 async function doSummarize() {
   if (!inputText.value.trim() || !apiKey.value) return
@@ -184,9 +190,11 @@ ${includeAnalysis.value ? '5. analysis: \u6DF1\u5EA6\u5206\u6790\uFF08\u5305\u62
 
 \u53EA\u8F93\u51FAJSON\uFF0C\u4E0D\u8981\u5176\u4ED6\u5185\u5BB9\u3002`
 
+    const cleanKey = cleanApiKey(apiKey.value || '')
+    
     const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey.value}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cleanKey },
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: [
@@ -287,7 +295,6 @@ async function saveSummary() {
   loadHistory()
 }
 
-function saveApiKey() { localStorage.setItem('deepseek_api_key', apiKey.value); doSummarize() }
 function goToChar(c: string) { if (/[\u4e00-\u9fff]/.test(c)) router.push(`/char/${encodeURIComponent(c)}`) }
 function goToSummaryPage() { if (savedSummaryId.value) router.push(`/summary/${savedSummaryId.value}`) }
 function goToHistory(id: string) { router.push(`/summary/${id}`) }
@@ -340,11 +347,12 @@ const uniqueChars = computed(() => {
       </div>
     </div>
 
-    <!-- API Key -->
-    <div v-if="!apiKey" class="api-panel">
-      <p>需要配置 DeepSeek API Key：</p>
-      <input v-model="apiKey" type="password" placeholder="sk-..." class="api-input" />
-      <button @click="saveApiKey" class="btn-primary">保存</button>
+    <!-- API Key 状态 -->
+    <div v-if="apiKeyLoading" class="api-panel">
+      <p>正在加载 API 配置...</p>
+    </div>
+    <div v-else-if="!apiKey" class="api-panel error">
+      <p>⚠️ 系统未配置 AI 服务，请联系管理员</p>
     </div>
 
     <!-- \u5386\u53F2\u8BB0\u5F55 -->
@@ -456,7 +464,7 @@ const uniqueChars = computed(() => {
 .checkbox { @apply flex items-center gap-2 text-sm cursor-pointer; }
 
 .api-panel { @apply bg-amber-50 border border-amber-200 rounded-lg p-4 text-center; }
-.api-input { @apply w-full max-w-md px-4 py-2 border border-stone-300 rounded-lg my-3; }
+.api-panel.error { @apply bg-red-50 border-red-200 text-red-700; }
 .btn-primary { @apply px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600; }
 
 .history-section { @apply bg-white rounded-xl p-4; }

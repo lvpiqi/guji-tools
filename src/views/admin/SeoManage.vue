@@ -5,19 +5,53 @@
 import { ref, computed, onMounted } from 'vue'
 import { getAllCachedCharacters, exportAllData, type CharacterData } from '@core/services/aiContent'
 import { downloadSitemap, generateSitemap } from '@core/services/sitemap'
+import { supabase } from '@core/services/supabase'
 
 const cachedChars = ref<string[]>([])
 const allData = ref<Record<string, CharacterData>>({})
 const showSitemap = ref(false)
 const sitemapContent = ref('')
 
+// 数据库统计
+const dbStats = ref({
+  characters: 0,
+  summaries: 0,
+  publicSummaries: 0,
+})
+
 onMounted(() => {
   loadData()
+  loadDbStats()
 })
 
 function loadData() {
   cachedChars.value = getAllCachedCharacters()
   allData.value = exportAllData()
+}
+
+async function loadDbStats() {
+  try {
+    // 获取汉字数量
+    const { count: charCount } = await supabase
+      .from('character_data')
+      .select('*', { count: 'exact', head: true })
+    dbStats.value.characters = charCount || 0
+    
+    // 获取摘要数量
+    const { count: summaryCount } = await supabase
+      .from('summary_data')
+      .select('*', { count: 'exact', head: true })
+    dbStats.value.summaries = summaryCount || 0
+    
+    // 获取公开摘要数量
+    const { count: publicCount } = await supabase
+      .from('summary_data')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_public', true)
+    dbStats.value.publicSummaries = publicCount || 0
+  } catch (e) {
+    console.log('Failed to load DB stats:', e)
+  }
 }
 
 function previewSitemap() {
@@ -26,8 +60,9 @@ function previewSitemap() {
 }
 
 const stats = computed(() => ({
-  totalChars: cachedChars.value.length,
-  totalPages: cachedChars.value.length + 20, // 工具页面约20个
+  totalChars: Math.max(cachedChars.value.length, dbStats.value.characters),
+  totalSummaries: dbStats.value.publicSummaries,
+  totalPages: Math.max(cachedChars.value.length, dbStats.value.characters) + dbStats.value.publicSummaries + 30, // 工具页面约30个
   withEvolution: Object.values(allData.value).filter(d => d.evolution).length,
   withRhyme: Object.values(allData.value).filter(d => d.rhyme).length,
   withVariants: Object.values(allData.value).filter(d => d.variants?.length).length,
@@ -62,13 +97,33 @@ const internalLinks = computed(() => {
         <span class="stat-label">汉字详情页</span>
       </div>
       <div class="stat-card">
+        <span class="stat-value">{{ stats.totalSummaries }}</span>
+        <span class="stat-label">摘要详情页</span>
+      </div>
+      <div class="stat-card">
         <span class="stat-value">{{ internalLinks }}</span>
         <span class="stat-label">内部链接</span>
       </div>
-      <div class="stat-card">
-        <span class="stat-value">{{ stats.withDefinition }}</span>
-        <span class="stat-label">有完整内容</span>
+    </div>
+
+    <!-- 数据库统计 -->
+    <div class="section">
+      <h2>📊 数据库内容统计</h2>
+      <div class="db-stats">
+        <div class="db-stat-item">
+          <span class="db-stat-value">{{ dbStats.characters }}</span>
+          <span class="db-stat-label">汉字数据</span>
+        </div>
+        <div class="db-stat-item">
+          <span class="db-stat-value">{{ dbStats.summaries }}</span>
+          <span class="db-stat-label">摘要总数</span>
+        </div>
+        <div class="db-stat-item">
+          <span class="db-stat-value">{{ dbStats.publicSummaries }}</span>
+          <span class="db-stat-label">公开摘要</span>
+        </div>
       </div>
+      <p class="section-hint">每个汉字和公开摘要都会生成独立的 SEO 页面</p>
     </div>
 
     <!-- Sitemap 管理 -->
@@ -172,6 +227,10 @@ const internalLinks = computed(() => {
           <p>每个查询的汉字自动生成独立页面 /char/字，形成长尾关键词矩阵</p>
         </div>
         <div class="tip-card">
+          <h4>摘要即内容</h4>
+          <p>每个生成的摘要自动创建独立页面 /summary/slug，丰富站点内容</p>
+        </div>
+        <div class="tip-card">
           <h4>自动内链建设</h4>
           <p>异体字、同韵部字之间自动互链，提升页面权重和用户停留时间</p>
         </div>
@@ -179,10 +238,18 @@ const internalLinks = computed(() => {
           <h4>结构化数据</h4>
           <p>每个页面包含 JSON-LD 结构化数据，帮助搜索引擎理解内容</p>
         </div>
-        <div class="tip-card">
-          <h4>动态 Sitemap</h4>
-          <p>站点地图随内容自动更新，定期提交保持搜索引擎同步</p>
-        </div>
+      </div>
+      
+      <div class="build-guide">
+        <h4>🔧 构建静态页面</h4>
+        <p>运行以下命令生成 SEO 优化的静态 HTML 页面：</p>
+        <code>npm run build</code>
+        <p class="hint">构建时会自动为热门汉字和摘要生成独立 HTML 文件</p>
+        
+        <h4 class="mt-4">🔄 增量构建（新内容）</h4>
+        <p>为数据库中新增的汉字和摘要生成页面：</p>
+        <code>npm run build:incremental</code>
+        <p class="hint">建议设置定时任务（如每小时运行一次）自动生成新页面</p>
       </div>
     </div>
 
@@ -243,10 +310,22 @@ const internalLinks = computed(() => {
 
 .tips-section { @apply bg-green-50 rounded-xl p-6; }
 .tips-section h3 { @apply font-medium text-green-800 mb-4; }
-.tips-grid { @apply grid grid-cols-1 md:grid-cols-2 gap-4; }
+.tips-grid { @apply grid grid-cols-1 md:grid-cols-2 gap-4 mb-4; }
 .tip-card { @apply bg-white rounded-lg p-4; }
 .tip-card h4 { @apply font-medium text-stone-800 mb-1; }
 .tip-card p { @apply text-sm text-stone-500; }
+
+.build-guide { @apply bg-white rounded-lg p-4 mt-4; }
+.build-guide h4 { @apply font-medium text-stone-800 mb-2; }
+.build-guide p { @apply text-sm text-stone-600 mb-2; }
+.build-guide code { @apply block bg-stone-800 text-green-400 px-4 py-2 rounded font-mono text-sm; }
+.build-guide .hint { @apply text-xs text-stone-400 mt-2; }
+
+.db-stats { @apply flex gap-6 mb-4; }
+.db-stat-item { @apply flex flex-col items-center p-4 bg-stone-50 rounded-lg; }
+.db-stat-value { @apply text-2xl font-bold text-stone-800; }
+.db-stat-label { @apply text-sm text-stone-500; }
+.section-hint { @apply text-sm text-stone-400; }
 
 .modal-overlay { @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50; }
 .modal-content { @apply bg-white rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden; }

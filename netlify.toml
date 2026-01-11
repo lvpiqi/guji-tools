@@ -1,0 +1,60 @@
+# Netlify 配置文件
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# 预渲染配置 - 让搜索引擎能抓取动态页面
+[build.processing]
+  skip_processing = false
+
+[build.processing.html]
+  pretty_urls = true
+
+# 重定向规则 - SPA 路由支持
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin"]}
+
+# 汉字详情页 - 优先使用静态 HTML
+[[redirects]]
+  from = "/char/*"
+  to = "/char/:splat/index.html"
+  status = 200
+  force = false
+
+# 摘要详情页 - 优先使用静态 HTML
+[[redirects]]
+  from = "/summary/*"
+  to = "/summary/:splat/index.html"
+  status = 200
+  force = false
+
+# 其他页面 - SPA 路由
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# 缓存头
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+# 定时构建函数（需要 Netlify Pro）
+# 可以设置每小时运行一次增量构建
+# [functions]
+#   scheduled_functions = "netlify/functions"
