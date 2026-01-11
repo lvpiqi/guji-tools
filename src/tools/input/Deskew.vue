@@ -1,19 +1,107 @@
 <script setup lang="ts">
 /**
  * 自动纠偏裁边工具
- * 使用 Web Worker 运行 OpenCV，避免阻塞 UI
+ * SEO 优化版本 - 使用 Web Worker 运行 OpenCV
  */
 import { ref, computed } from 'vue'
 import FileDropzone from '@components/common/FileDropzone.vue'
 import ImageCompare from '@components/common/ImageCompare.vue'
 import ProgressBar from '@components/common/ProgressBar.vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
 import { 
   initOpenCVWorker, 
   deskewInWorker, 
   useOpenCVWorkerStatus 
 } from '@core/wasm/opencv-worker-client'
 
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  // 基础信息
+  name: '自动纠偏裁边',
+  path: '/input/deskew',
+  category: '输入处理',
+  categoryPath: '/input',
+  
+  // SEO Meta
+  title: '自动纠偏裁边 - 古籍图片倾斜校正与白边裁切工具',
+  description: '免费在线古籍图片自动纠偏裁边工具。基于OpenCV智能检测倾斜角度，自动矫正歪斜图片，裁切多余白边，支持批量处理，本地运行保护隐私。',
+  keywords: ['自动纠偏', '图片裁边', '倾斜校正', '古籍扫描', '图像处理', 'OpenCV', '批量处理', '古籍数字化'],
+  ogImage: '/og-images/default.png',
+  
+  // 时间信息
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  // 内容
+  shortDesc: '智能检测并矫正古籍图片倾斜角度，自动裁切多余白边，基于 OpenCV 技术',
+  
+  features: [
+    '智能检测图片倾斜角度并自动矫正',
+    '自动识别并裁切多余白边',
+    '支持手动微调旋转角度（±45°）',
+    '基于 OpenCV.js 的专业图像处理',
+    '支持批量处理多张图片',
+    '本地浏览器运行，无需上传服务器',
+    '支持 JPG、PNG、WebP、TIFF 格式',
+    '处理前后对比预览，一键打包下载'
+  ],
+  
+  howToUse: [
+    '点击上传区域或拖拽古籍图片到上传框',
+    '根据需要调整处理选项（自动纠偏、裁切白边、手动旋转）',
+    '点击「开始处理」按钮，首次使用会自动加载 OpenCV',
+    '在预览区查看处理前后的对比效果',
+    '满意后点击「打包下载」保存所有处理结果'
+  ],
+  
+  introduction: `在扫描或拍摄古籍、古书、线装书等文献时，由于放置角度或扫描仪的原因，图片经常会出现倾斜。同时，扫描件周围往往会有大量多余的白边，这些问题都会影响后续的阅读体验和 OCR 识别效果。
+
+本工具采用 OpenCV.js 图像处理技术，能够智能检测图片的倾斜角度，并自动进行矫正。同时还能识别图片中的有效内容区域，自动裁切掉周围多余的白边，让古籍图片更加规整美观。
+
+整个处理过程完全在您的浏览器本地完成，使用 Web Worker 技术在后台运行，不会阻塞页面操作。图片不会上传到任何服务器，充分保护您的隐私和文献安全。首次使用时需要加载 OpenCV 库（约5-10秒），之后处理速度会非常快。
+
+处理完成后，您还可以使用「去手指阴影」工具去除拍摄时的手指痕迹，或使用「竖排OCR」进行文字识别，实现古籍的完整数字化流程。`,
+
+  faq: [
+    {
+      question: '支持哪些图片格式？',
+      answer: '支持 JPG/JPEG、PNG、WebP、TIFF 等常见图片格式。建议使用高清扫描件以获得最佳效果。'
+    },
+    {
+      question: '首次加载为什么比较慢？',
+      answer: '首次使用需要加载 OpenCV.js 库（约2MB），这个过程需要5-10秒。加载完成后会缓存到浏览器，后续使用会很快。'
+    },
+    {
+      question: '自动检测倾斜角度准确吗？',
+      answer: '对于文字行清晰的古籍图片，自动检测准确率很高。如果自动检测效果不理想，可以关闭自动检测，使用手动旋转功能微调角度。'
+    },
+    {
+      question: '图片会上传到服务器吗？',
+      answer: '不会。所有图像处理都在您的浏览器本地完成，使用 Web Worker 技术运行，图片不会上传到任何服务器。'
+    },
+    {
+      question: '处理时页面会卡顿吗？',
+      answer: '不会。我们使用 Web Worker 技术在后台线程处理图片，不会阻塞页面的正常操作。'
+    },
+    {
+      question: '可以只裁边不纠偏吗？',
+      answer: '可以。在处理选项中取消勾选「自动检测倾斜并矫正」，只保留「自动裁切白边」即可。'
+    },
+    {
+      question: '手动旋转角度范围是多少？',
+      answer: '手动旋转支持 -45° 到 +45° 的范围，精度为 0.5°，可以满足大多数微调需求。'
+    }
+  ],
+  
+  // 技术信息
+  supportedFormats: ['JPG', 'PNG', 'WebP', 'TIFF'],
+  maxFileSize: 50,
+  isOffline: true,
+  isFree: true
+}
+
+// OpenCV Worker 状态
 const { isLoaded: cvLoaded, isLoading: cvLoading, loadError: cvError } = useOpenCVWorkerStatus()
 
 interface Task {
@@ -82,7 +170,6 @@ async function processTask(task: Task) {
   task.status = 'processing'
   
   try {
-    // 加载图像到 Canvas 获取 ImageData
     const img = await loadImage(task.file)
     const canvas = document.createElement('canvas')
     canvas.width = img.width
@@ -91,18 +178,12 @@ async function processTask(task: Task) {
     ctx.drawImage(img, 0, 0)
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
-    console.log('Sending to worker:', imageData.width, 'x', imageData.height)
-
-    // 在 Worker 中处理
     const result = await deskewInWorker(imageData, {
       autoDetect: autoDetect.value,
       cropWhiteBorder: cropWhiteBorder.value,
       rotateAngle: rotateAngle.value
     })
 
-    console.log('Got result:', result.width, 'x', result.height)
-
-    // 结果转回图像
     const outputCanvas = document.createElement('canvas')
     outputCanvas.width = result.width
     outputCanvas.height = result.height
@@ -113,8 +194,6 @@ async function processTask(task: Task) {
     const blob = await canvasToBlob(outputCanvas)
     task.resultUrl = URL.createObjectURL(blob)
     task.status = 'done'
-    
-    console.log('Task done:', task.file.name)
   } catch (e) {
     task.status = 'error'
     task.error = e instanceof Error ? e.message : 'Processing failed'
@@ -188,31 +267,24 @@ function clearAll() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">自动纠偏裁边</h1>
-      <p class="tool-desc">自动检测倾斜角度并矫正，裁切多余白边，基于 OpenCV.js (Web Worker)</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <!-- OpenCV 加载状态 -->
-    <div v-if="cvLoading" class="loading-banner">
+    <div v-if="cvLoading" class="status-banner loading">
       <span class="loading-spinner"></span>
       正在后台加载 OpenCV.js（首次约需5-10秒，页面不会卡顿）...
     </div>
-    <div v-else-if="cvError" class="error-banner">
+    <div v-else-if="cvError" class="status-banner error">
       OpenCV 加载失败: {{ cvError }}
       <button @click="retryLoad" class="retry-btn">重试</button>
     </div>
-    <div v-else-if="!cvLoaded" class="info-banner">
-      💡 点击"开始处理"时将在后台加载 OpenCV（首次约需5-10秒）
-    </div>
-    <div v-else class="success-banner">
+    <div v-else-if="cvLoaded" class="status-banner success">
       ✓ OpenCV 已就绪
     </div>
 
+    <!-- 工具主体 -->
     <div class="tool-body">
       <!-- 左侧：上传和设置 -->
-      <div class="tool-left">
+      <div class="tool-upload">
         <FileDropzone
           accept="image/jpeg,image/png,image/webp,image/tiff"
           :max-size="50"
@@ -268,27 +340,30 @@ function clearAll() {
 
         <!-- 操作按钮 -->
         <div class="tool-actions">
-          <button
-            class="btn-primary"
-            :disabled="!tasks.length || processing"
-            @click="processAll"
-          >
-            {{ processing ? (cvLoading ? '加载OpenCV...' : '处理中...') : '开始处理' }}
-          </button>
-          <button
-            class="btn-secondary"
-            :disabled="doneCount === 0"
-            @click="downloadAll"
-          >
-            打包下载 ({{ doneCount }})
-          </button>
-          <button
-            class="btn-text"
-            :disabled="!tasks.length"
-            @click="clearAll"
-          >
-            清空
-          </button>
+          <div class="actions-left">
+            <button
+              class="btn-primary"
+              :disabled="!tasks.length || processing"
+              @click="processAll"
+            >
+              {{ processing ? (cvLoading ? '加载OpenCV...' : '处理中...') : '开始处理' }}
+            </button>
+            <button
+              class="btn-secondary"
+              :disabled="doneCount === 0"
+              @click="downloadAll"
+            >
+              打包下载 ({{ doneCount }})
+            </button>
+            <button
+              class="btn-text"
+              :disabled="!tasks.length"
+              @click="clearAll"
+            >
+              清空
+            </button>
+          </div>
+          <ToolFeedback tool-name="自动纠偏裁边" />
         </div>
 
         <ProgressBar v-if="processing" :value="progress" class="mt-4" />
@@ -306,55 +381,43 @@ function clearAll() {
           </button>
         </template>
         <template v-else-if="currentTask">
-          <img :src="currentTask.originalUrl" class="preview-image" alt="预览" />
+          <img :src="currentTask.originalUrl" class="preview-image" alt="古籍图片预览" />
         </template>
         <div v-else class="preview-empty">
           <span>上传图片开始处理</span>
         </div>
       </div>
     </div>
-
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page {
-  @apply max-w-6xl mx-auto;
+.status-banner {
+  @apply p-3 mb-4 rounded-lg text-sm;
 }
-.tool-header {
-  @apply mb-6;
+.status-banner.loading {
+  @apply flex items-center gap-2 bg-amber-50 text-amber-700;
 }
-.tool-title {
-  @apply text-2xl font-bold text-stone-800;
+.status-banner.error {
+  @apply flex items-center gap-2 bg-red-50 text-red-700;
 }
-.tool-desc {
-  @apply text-stone-600 mt-1;
-}
-.info-banner {
-  @apply p-3 mb-4 bg-blue-50 text-blue-700 rounded-lg text-sm;
-}
-.loading-banner {
-  @apply flex items-center gap-2 p-3 mb-4 bg-amber-50 text-amber-700 rounded-lg;
+.status-banner.success {
+  @apply bg-green-50 text-green-700;
 }
 .loading-spinner {
   @apply w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin;
 }
-.error-banner {
-  @apply flex items-center gap-2 p-3 mb-4 bg-red-50 text-red-700 rounded-lg;
-}
-.success-banner {
-  @apply p-3 mb-4 bg-green-50 text-green-700 rounded-lg text-sm;
-}
 .retry-btn {
   @apply ml-auto px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600;
 }
+
 .tool-body {
   @apply grid grid-cols-1 lg:grid-cols-2 gap-6;
 }
-.tool-left {
+.tool-upload {
   @apply space-y-4;
 }
+
 .settings-panel {
   @apply bg-white rounded-lg border border-stone-200 p-4;
 }
@@ -373,6 +436,7 @@ function clearAll() {
 .range-value {
   @apply w-12 text-right text-stone-500;
 }
+
 .task-list {
   @apply bg-white rounded-lg border border-stone-200 divide-y divide-stone-100 max-h-48 overflow-auto;
 }
@@ -394,8 +458,12 @@ function clearAll() {
 .task-status {
   @apply text-xs text-stone-500;
 }
+
 .tool-actions {
-  @apply flex gap-3 flex-wrap;
+  @apply flex items-center justify-between;
+}
+.actions-left {
+  @apply flex gap-3;
 }
 .btn-primary {
   @apply px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
@@ -406,6 +474,7 @@ function clearAll() {
 .btn-text {
   @apply px-4 py-2 text-stone-500 hover:text-stone-700 disabled:opacity-50 transition-colors;
 }
+
 .tool-preview {
   @apply bg-white rounded-xl border border-stone-200 p-4 min-h-[400px] flex flex-col items-center justify-center;
 }

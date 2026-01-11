@@ -88,7 +88,7 @@ const ogImageUrl = computed(() => {
 })
 
 // 页面标题
-const pageTitle = computed(() => `${props.config.name} | ${SITE_NAME}`)
+const pageTitle = computed(() => `${props.config.name} - ${SITE_NAME}`)
 
 // 介绍段落（解析内部链接）
 const introductionParagraphs = computed(() => {
