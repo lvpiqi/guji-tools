@@ -31,11 +31,15 @@ async function saveProfile() {
   message.value = { type: '', text: '' }
   
   try {
-    authStore.updateUser({
+    const success = await authStore.updateProfile({
       username: profileForm.value.username,
       phone: profileForm.value.phone,
     })
-    message.value = { type: 'success', text: '保存成功' }
+    if (success) {
+      message.value = { type: 'success', text: '保存成功' }
+    } else {
+      message.value = { type: 'error', text: '保存失败' }
+    }
   } catch (e: any) {
     message.value = { type: 'error', text: e.message || '保存失败' }
   } finally {
