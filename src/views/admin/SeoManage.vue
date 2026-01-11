@@ -245,11 +245,6 @@ const internalLinks = computed(() => {
         <p>运行以下命令生成 SEO 优化的静态 HTML 页面：</p>
         <code>npm run build</code>
         <p class="hint">构建时会自动为热门汉字和摘要生成独立 HTML 文件</p>
-        
-        <h4 class="mt-4">🔄 增量构建（新内容）</h4>
-        <p>为数据库中新增的汉字和摘要生成页面：</p>
-        <code>npm run build:incremental</code>
-        <p class="hint">建议设置定时任务（如每小时运行一次）自动生成新页面</p>
       </div>
     </div>
 

@@ -8,7 +8,6 @@
     "build": "vite build && node scripts/generate-html.js && node scripts/generate-seo-pages.js",
     "build:only": "vite build",
     "build:seo": "node scripts/generate-seo-pages.js",
-    "build:incremental": "node scripts/incremental-build.js",
     "export:db": "node scripts/export-db-data.js",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx,.vue",
