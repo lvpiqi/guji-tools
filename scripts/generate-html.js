@@ -67,7 +67,7 @@ const tools = [
 ]
 
 // HTML 模板
-function generateHTML(tool) {
+function generateHTML(tool, cssPath, jsPath) {
   const fullUrl = `${BASE_URL}${tool.path}`
   const ogImage = `${BASE_URL}/og-images/default.png`
   
@@ -104,35 +104,37 @@ function generateHTML(tool) {
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   
   <!-- Styles -->
-  <link rel="stylesheet" href="/assets/index.css" />
+  <link rel="stylesheet" crossorigin href="${cssPath}" />
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="/assets/index.js"></script>
+  <script type="module" crossorigin src="${jsPath}"></script>
 </body>
-</html>` 
+</html>`
+}
 
 // 生成文件
 function generate() {
   const distDir = path.join(__dirname, '../dist')
   
   if (!fs.existsSync(distDir)) {
-    console.log('请先运行 npm run build')
-    process.exit(1)
+    console.log('dist 目录不存在，跳过 HTML 生成')
+    return
   }
   
   // 读取构建后的 index.html 获取实际的资源路径
   const indexHtml = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-8')
-  const cssMatch = indexHtml.match(/href="(\/assets\/index[^"]+\.css)"/)
-  const jsMatch = indexHtml.match(/src="(\/assets\/index[^"]+\.js)"/)
+  const cssMatch = indexHtml.match(/href="([^"]+\.css)"/)
+  const jsMatch = indexHtml.match(/src="([^"]+\.js)"/)
   
   const cssPath = cssMatch ? cssMatch[1] : '/assets/index.css'
   const jsPath = jsMatch ? jsMatch[1] : '/assets/index.js'
   
+  console.log('CSS:', cssPath)
+  console.log('JS:', jsPath)
+  
   tools.forEach(tool => {
-    const html = generateHTML(tool)
-      .replace('/assets/index.css', cssPath)
-      .replace('/assets/index.js', jsPath)
+    const html = generateHTML(tool, cssPath, jsPath)
     
     // 创建目录
     const toolDir = path.join(distDir, tool.path)
