@@ -1,11 +1,78 @@
 <script setup lang="ts">
 /**
  * 古画色卡工具
- * 从图像中提取颜色并匹配中国传统色名
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
 import FileDropzone from '@components/common/FileDropzone.vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '古画色卡',
+  path: '/pro/color-palette',
+  category: '专业工具',
+  categoryPath: '/pro',
+  
+  description: '免费在线古画色卡提取工具。从古画中提取主要颜色，自动匹配中国传统色名，支持复制色值。',
+  keywords: ['古画色卡', '颜色提取', '中国传统色', '配色方案', '古典配色', '色彩分析'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '从古画中提取颜色，匹配中国传统色名',
+  
+  features: [
+    '自动提取图像主要颜色',
+    '匹配中国传统色名',
+    '可调节提取颜色数量',
+    '显示颜色占比百分比',
+    '点击复制色值',
+    '内置传统色参考',
+    '支持常见图片格式',
+    '本地处理保护隐私'
+  ],
+  
+  howToUse: [
+    '上传古画或其他图片',
+    '设置要提取的颜色数量',
+    '点击「提取颜色」进行分析',
+    '查看提取的颜色和传统色名',
+    '点击颜色卡片复制色值'
+  ],
+  
+  introduction: `中国传统色彩有着独特的美学价值和文化内涵。本工具可以从古画中提取主要颜色，并自动匹配最接近的中国传统色名。
+
+工具使用颜色量化算法分析图像，提取出现频率最高的颜色。然后通过颜色距离计算，找到最接近的传统色名。
+
+提取的颜色可以用于设计配色参考，也可以帮助了解古画的用色特点。`,
+
+  faq: [
+    {
+      question: '传统色名准确吗？',
+      answer: '工具会匹配最接近的传统色，但由于颜色空间差异，可能不完全准确。'
+    },
+    {
+      question: '提取多少颜色合适？',
+      answer: '一般8-12个颜色可以较好地反映图像的主要色彩。'
+    },
+    {
+      question: '支持哪些图片格式？',
+      answer: '支持JPG、PNG、WebP等常见格式。'
+    },
+    {
+      question: '如何复制色值？',
+      answer: '点击颜色卡片即可复制该颜色的十六进制色值。'
+    }
+  ],
+  
+  supportedFormats: ['JPG', 'PNG', 'WebP'],
+  maxFileSize: 10,
+  isOffline: true,
+  isFree: true
+}
 
 interface ExtractedColor {
   hex: string
@@ -196,11 +263,8 @@ function clearAll() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">古画色卡</h1>
-      <p class="tool-desc">从古画中提取主要颜色，匹配中国传统色名</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
 
     <div v-if="!hasImage">
       <FileDropzone
@@ -290,26 +354,16 @@ function clearAll() {
         </div>
       </div>
     </div>
-
-    <RelatedTools />
-  </div>
+    <div class="footer-actions">
+      <ToolFeedback tool-name="古画色卡" />
+    </div>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page {
-  @apply max-w-4xl mx-auto;
-}
-.tool-header {
-  @apply mb-6;
-}
-.tool-title {
-  @apply text-2xl font-bold text-stone-800;
-}
-.tool-desc {
-  @apply text-stone-600 mt-1;
-}
 .tool-body {
-  @apply space-y-6;
+  @apply max-w-4xl mx-auto space-y-6;
 }
 .preview-section {
   @apply bg-white rounded-xl border border-stone-200 p-4 flex justify-center;

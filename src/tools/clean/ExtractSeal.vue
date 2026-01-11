@@ -1,11 +1,86 @@
 <script setup lang="ts">
 /**
  * 印章提取工具
- * 从古籍图像中提取红色印章为透明PNG
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
 import FileDropzone from '@components/common/FileDropzone.vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '印章提取',
+  path: '/clean/extract-seal',
+  category: '图像清理',
+  categoryPath: '/clean',
+  
+  description: '免费在线古籍印章提取工具。自动检测并提取古籍图像中的红色印章为透明PNG，支持参数调节，适合印章收藏和研究。',
+  keywords: ['印章提取', '古籍印章', '红色印章', '透明PNG', '印章识别', '古籍研究'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '自动检测并提取古籍中的红色印章为透明PNG',
+  
+  features: [
+    '自动检测图像中的红色印章区域',
+    '提取为透明背景PNG格式',
+    '支持调节色相、饱和度、明度阈值',
+    '可设置最小面积过滤噪点',
+    '支持提取多个印章',
+    '一键打包下载所有印章',
+    '本地处理，保护隐私',
+    '显示印章尺寸信息'
+  ],
+  
+  howToUse: [
+    '上传包含印章的古籍图片',
+    '根据印章颜色调整提取参数',
+    '点击「开始提取」检测印章',
+    '查看提取结果，可单独下载或打包下载',
+    '如未检测到印章，调整参数后重试'
+  ],
+  
+  introduction: `古籍中的印章是重要的版本鉴定和收藏研究资料。本工具可以自动从古籍图像中检测并提取红色印章，生成透明背景的PNG图片，方便您进行印章的收集、整理和研究。
+
+工具基于HSV颜色空间进行印章检测，通过分析像素的色相、饱和度和明度来识别红色区域。您可以根据实际印章的颜色深浅调整检测参数，以获得最佳提取效果。
+
+提取完成后，每个印章会单独保存为透明PNG格式，保留印章的原始颜色和细节。您可以单独下载某个印章，也可以一键打包下载所有提取的印章。`,
+
+  faq: [
+    {
+      question: '可以提取非红色的印章吗？',
+      answer: '目前主要针对红色印章优化。其他颜色的印章可以尝试调整色相范围参数，但效果可能不理想。'
+    },
+    {
+      question: '为什么没有检测到印章？',
+      answer: '可能是印章颜色较淡或参数设置不合适。尝试降低饱和度和明度的最小值，或增大色相范围。'
+    },
+    {
+      question: '提取的印章有很多噪点怎么办？',
+      answer: '增大「最小面积」参数可以过滤掉小的噪点区域。'
+    },
+    {
+      question: '图片会上传到服务器吗？',
+      answer: '不会。所有处理都在浏览器本地完成，图片不会上传到任何服务器。'
+    },
+    {
+      question: '支持哪些图片格式？',
+      answer: '支持 JPG、PNG、WebP 等常见图片格式。'
+    },
+    {
+      question: '提取的印章是什么格式？',
+      answer: '提取的印章为PNG格式，背景透明，方便后续使用。'
+    }
+  ],
+  
+  supportedFormats: ['JPG', 'PNG', 'WebP'],
+  maxFileSize: 20,
+  isOffline: true,
+  isFree: true
+}
 
 interface ExtractedSeal {
   id: string
@@ -275,12 +350,7 @@ function clearAll() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">印章提取</h1>
-      <p class="tool-desc">自动检测并提取古籍中的红色印章为透明PNG</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <div v-if="!hasImage">
       <FileDropzone
         accept="image/jpeg,image/png,image/webp"
@@ -294,7 +364,7 @@ function clearAll() {
       <!-- 原图预览 -->
       <div class="preview-section">
         <h3>原图</h3>
-        <img :src="imageUrl" class="preview-image" />
+        <img :src="imageUrl" class="preview-image" alt="古籍原图" />
       </div>
 
       <!-- 参数设置 -->
@@ -328,14 +398,17 @@ function clearAll() {
 
       <!-- 操作按钮 -->
       <div class="actions">
-        <button 
-          class="btn-primary"
-          :disabled="processing"
-          @click="extractSeals"
-        >
-          {{ processing ? '提取中...' : '开始提取' }}
-        </button>
-        <button class="btn-text" @click="clearAll">重新选择</button>
+        <div class="actions-left">
+          <button 
+            class="btn-primary"
+            :disabled="processing"
+            @click="extractSeals"
+          >
+            {{ processing ? '提取中...' : '开始提取' }}
+          </button>
+          <button class="btn-text" @click="clearAll">重新选择</button>
+        </div>
+        <ToolFeedback tool-name="印章提取" />
       </div>
 
       <!-- 提取结果 -->
@@ -352,7 +425,7 @@ function clearAll() {
             class="seal-card"
           >
             <div class="seal-preview">
-              <img :src="seal.url" />
+              <img :src="seal.url" alt="提取的印章" />
             </div>
             <div class="seal-info">
               <span>{{ seal.width }}×{{ seal.height }}</span>
@@ -362,24 +435,10 @@ function clearAll() {
         </div>
       </div>
     </div>
-
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page {
-  @apply max-w-4xl mx-auto;
-}
-.tool-header {
-  @apply mb-6;
-}
-.tool-title {
-  @apply text-2xl font-bold text-stone-800;
-}
-.tool-desc {
-  @apply text-stone-600 mt-1;
-}
 .tool-body {
   @apply space-y-6;
 }
@@ -411,7 +470,10 @@ function clearAll() {
   @apply w-16 text-sm text-stone-500 text-right;
 }
 .actions {
-  @apply flex gap-4 justify-center;
+  @apply flex items-center justify-between;
+}
+.actions-left {
+  @apply flex gap-4;
 }
 .btn-primary {
   @apply px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 

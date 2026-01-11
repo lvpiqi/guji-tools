@@ -1,7 +1,80 @@
 <script setup lang="ts">
+/**
+ * 自动摘要工具
+ * SEO 优化版本
+ */
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '自动摘要',
+  path: '/pro/summary',
+  category: '专业工具',
+  categoryPath: '/pro',
+  
+  description: '免费在线古文自动摘要工具。AI全面分析古文，生成摘要、翻译、关键词、主题分析和深度解读。',
+  keywords: ['自动摘要', '古文分析', 'AI摘要', '关键词提取', '主题分析', '古文翻译'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: 'AI全面分析古文：摘要、翻译、关键词、深度解读',
+  
+  features: [
+    '生成详细摘要',
+    '提取核心关键词',
+    '分析文章主题',
+    '生成现代汉语翻译',
+    '提供深度分析解读',
+    '自动生成独立页面',
+    '点击汉字查看释义',
+    '支持历史记录查看'
+  ],
+  
+  howToUse: [
+    '配置DeepSeek API Key',
+    '输入要分析的古文文本',
+    '选择摘要详细程度',
+    '点击「开始分析」',
+    '查看摘要、翻译、分析等结果'
+  ],
+  
+  introduction: `阅读古籍时，快速了解文章大意和核心观点非常重要。本工具使用AI对古文进行全面分析，生成摘要、翻译、关键词、主题分析和深度解读。
+
+摘要可以选择不同的详细程度：适中（100-150字）、详细（200-300字）、全面（500字以上）。深度分析会从写作背景、作者意图、历史影响、文学价值等角度进行解读。
+
+每次分析都会自动生成独立页面，方便分享和后续查阅。`,
+
+  faq: [
+    {
+      question: '分析准确吗？',
+      answer: 'AI分析仅供参考，重要研究请以专业文献为准。'
+    },
+    {
+      question: '可以分析多长的文本？',
+      answer: '建议单次分析不超过2000字，过长的文本可能影响分析质量。'
+    },
+    {
+      question: '独立页面有什么用？',
+      answer: '独立页面方便分享和后续查阅，也有利于搜索引擎收录。'
+    },
+    {
+      question: '历史记录保存在哪里？',
+      answer: '保存在浏览器本地存储中，清除浏览器数据会丢失。'
+    },
+    {
+      question: 'API Key如何获取？',
+      answer: '访问 platform.deepseek.com 注册账号即可获取API Key。'
+    }
+  ],
+  
+  isOffline: false,
+  isFree: true
+}
 
 const router = useRouter()
 const inputText = ref('')
@@ -202,11 +275,8 @@ const uniqueChars = computed(() => {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1>📋 自动摘要</h1>
-      <p>AI 全面分析古文：摘要、翻译、关键词、主题、深度解读</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
 
     <!-- 设置 -->
     <div class="settings-section">
@@ -317,34 +387,33 @@ const uniqueChars = computed(() => {
       <button @click="copyAll" class="copy-btn">复制全部内容</button>
     </div>
 
-    <!-- 相关工具推荐 -->
-    <RelatedTools />
-  </div>
+    <div class="footer-actions">
+      <ToolFeedback tool-name="自动摘要" />
+    </div>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-4xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-header h1 { @apply text-xl md:text-2xl font-bold text-stone-800; }
-.tool-header p { @apply text-stone-500 mt-1; }
+.tool-body { @apply max-w-4xl mx-auto space-y-4; }
 
-.settings-section { @apply bg-white rounded-xl p-4 mb-4 flex flex-wrap gap-6; }
+.settings-section { @apply bg-white rounded-xl p-4 flex flex-wrap gap-6; }
 .setting-group label:first-child { @apply block text-sm text-stone-600 mb-2; }
 .radio-group { @apply flex gap-4; }
 .radio-group label { @apply flex items-center gap-1 text-sm cursor-pointer; }
 .checkbox { @apply flex items-center gap-2 text-sm cursor-pointer; }
 
-.api-panel { @apply bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-center; }
+.api-panel { @apply bg-amber-50 border border-amber-200 rounded-lg p-4 text-center; }
 .api-input { @apply w-full max-w-md px-4 py-2 border border-stone-300 rounded-lg my-3; }
 .btn-primary { @apply px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600; }
 
-.history-section { @apply bg-white rounded-xl p-4 mb-4; }
+.history-section { @apply bg-white rounded-xl p-4; }
 .history-section h3 { @apply text-sm font-medium text-stone-600 mb-2; }
 .history-list { @apply flex flex-wrap gap-2; }
 .history-item { @apply px-3 py-1.5 bg-stone-100 rounded-lg text-sm cursor-pointer hover:bg-amber-100 flex items-center gap-2; }
 .history-item .date { @apply text-xs text-stone-400; }
 
-.input-section { @apply bg-white rounded-xl p-4 mb-4; }
+.input-section { @apply bg-white rounded-xl p-4; }
 .input-section textarea { @apply w-full p-3 border border-stone-300 rounded-lg resize-none outline-none; }
 .examples { @apply flex flex-wrap gap-2 mt-3 text-sm; }
 .examples span { @apply text-stone-500; }
@@ -379,4 +448,5 @@ const uniqueChars = computed(() => {
 .char-link { @apply w-10 h-10 flex items-center justify-center bg-stone-100 rounded-lg text-lg hover:bg-amber-100 hover:text-amber-700; }
 
 .copy-btn { @apply w-full py-2 border border-stone-300 rounded-lg hover:bg-stone-50; }
+.footer-actions { @apply text-center; }
 </style>

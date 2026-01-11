@@ -1,13 +1,88 @@
 <script setup lang="ts">
 /**
  * 背景统一/匀光工具
- * 纯 Canvas 实现，解决扫描光照不均问题
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
 import FileDropzone from '@components/common/FileDropzone.vue'
 import ImageCompare from '@components/common/ImageCompare.vue'
 import ProgressBar from '@components/common/ProgressBar.vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '背景统一/匀光',
+  path: '/clean/background-unify',
+  category: '图像清理',
+  categoryPath: '/clean',
+  
+  description: '免费在线古籍图像匀光工具。解决扫描光照不均、去除黄斑色偏、自动增强对比度，纯浏览器处理无需上传，保护隐私。',
+  keywords: ['背景统一', '匀光处理', '去黄斑', '扫描优化', '光照校正', '古籍清理', '图像增强'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '解决扫描光照不均、去除黄斑、增强对比度，纯浏览器处理',
+  
+  features: [
+    '智能检测并校正光照不均',
+    '去除黄斑和色偏',
+    '自动增强对比度',
+    '可调节匀光强度和采样块大小',
+    '支持批量处理多张图片',
+    '处理前后对比预览',
+    '本地浏览器处理，保护隐私',
+    '一键打包下载处理结果'
+  ],
+  
+  howToUse: [
+    '点击上传或拖拽古籍扫描图片',
+    '根据需要调整处理参数',
+    '点击「开始处理」进行匀光处理',
+    '在预览区查看处理前后对比',
+    '满意后点击「打包下载」保存结果'
+  ],
+  
+  introduction: `扫描古籍时，由于扫描仪光源分布不均或书页弯曲，经常会出现图像亮度不一致的问题，表现为图片某些区域偏暗或偏亮。此外，年代久远的古籍纸张往往会发黄，扫描后图像带有明显的黄色色偏。
+
+本工具采用自适应背景估算算法，能够智能检测图像各区域的背景亮度，然后进行校正使整体亮度均匀一致。同时还提供去黄功能，可以去除纸张老化带来的黄色色偏，以及自动对比度增强功能，让文字更加清晰。
+
+所有处理都在浏览器本地完成，图片不会上传到任何服务器。您可以根据实际效果调整采样块大小和匀光强度等参数，以获得最佳处理效果。`,
+
+  faq: [
+    {
+      question: '采样块大小有什么影响？',
+      answer: '采样块越小，匀光越精细但处理越慢；采样块越大，处理越快但可能遗漏局部光照不均。建议从64px开始尝试。'
+    },
+    {
+      question: '匀光强度如何选择？',
+      answer: '强度越高校正越明显，但可能导致过度处理。建议从80%开始，根据效果调整。'
+    },
+    {
+      question: '去黄功能会影响印章颜色吗？',
+      answer: '去黄功能主要针对背景纸张的黄色色偏，对红色印章影响较小。如果印章颜色变化明显，可以关闭此功能。'
+    },
+    {
+      question: '图片会上传到服务器吗？',
+      answer: '不会。所有处理都在浏览器本地完成，图片不会上传到任何服务器。'
+    },
+    {
+      question: '处理速度如何？',
+      answer: '处理速度取决于图片大小和采样块设置。一般2000x3000像素的图片处理时间约1-3秒。'
+    },
+    {
+      question: '可以批量处理吗？',
+      answer: '可以。支持一次上传多张图片，工具会依次处理，完成后可一键打包下载。'
+    }
+  ],
+  
+  supportedFormats: ['JPG', 'PNG', 'WebP'],
+  maxFileSize: 50,
+  isOffline: true,
+  isFree: true
+}
 
 interface Task {
   id: string
@@ -331,12 +406,7 @@ function clearAll() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">背景统一 / 匀光</h1>
-      <p class="tool-desc">解决扫描光照不均、去除黄斑、增强对比度，纯浏览器处理无需上传</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <div class="tool-body">
       <!-- 左侧 -->
       <div class="tool-left">
@@ -408,27 +478,30 @@ function clearAll() {
 
         <!-- 操作按钮 -->
         <div class="tool-actions">
-          <button
-            class="btn-primary"
-            :disabled="!tasks.length || processing"
-            @click="processAll"
-          >
-            {{ processing ? '处理中...' : '开始处理' }}
-          </button>
-          <button
-            class="btn-secondary"
-            :disabled="doneCount === 0"
-            @click="downloadAll"
-          >
-            打包下载 ({{ doneCount }})
-          </button>
-          <button
-            class="btn-text"
-            :disabled="!tasks.length"
-            @click="clearAll"
-          >
-            清空
-          </button>
+          <div class="actions-left">
+            <button
+              class="btn-primary"
+              :disabled="!tasks.length || processing"
+              @click="processAll"
+            >
+              {{ processing ? '处理中...' : '开始处理' }}
+            </button>
+            <button
+              class="btn-secondary"
+              :disabled="doneCount === 0"
+              @click="downloadAll"
+            >
+              打包下载 ({{ doneCount }})
+            </button>
+            <button
+              class="btn-text"
+              :disabled="!tasks.length"
+              @click="clearAll"
+            >
+              清空
+            </button>
+          </div>
+          <ToolFeedback tool-name="背景统一/匀光" />
         </div>
 
         <ProgressBar v-if="processing" :value="progress" class="mt-4" />
@@ -453,24 +526,10 @@ function clearAll() {
         </div>
       </div>
     </div>
-
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page {
-  @apply max-w-6xl mx-auto;
-}
-.tool-header {
-  @apply mb-6;
-}
-.tool-title {
-  @apply text-2xl font-bold text-stone-800;
-}
-.tool-desc {
-  @apply text-stone-600 mt-1;
-}
 .tool-body {
   @apply grid grid-cols-1 lg:grid-cols-2 gap-6;
 }
@@ -517,6 +576,9 @@ function clearAll() {
   @apply text-xs text-stone-500;
 }
 .tool-actions {
+  @apply flex items-center justify-between flex-wrap gap-2;
+}
+.actions-left {
   @apply flex gap-3 flex-wrap;
 }
 .btn-primary {

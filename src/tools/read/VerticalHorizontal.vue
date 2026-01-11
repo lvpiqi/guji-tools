@@ -1,10 +1,75 @@
 <script setup lang="ts">
 /**
  * 竖横排转换工具
- * 将竖排文字转为横排，或横排转竖排
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '竖横排转换',
+  path: '/read/vertical-horizontal',
+  category: '阅读辅助',
+  categoryPath: '/read',
+  
+  description: '免费在线古文竖横排转换工具。将文字在竖排和横排之间切换显示，支持自定义字体、字号和行距。',
+  keywords: ['竖排转换', '横排转换', '古文排版', '竖排阅读', '古籍排版', '文字方向'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '将文字在竖排和横排之间切换显示',
+  
+  features: [
+    '横排转竖排显示',
+    '竖排转横排显示',
+    '可调节字体大小',
+    '可调节行距',
+    '支持宋体/黑体/楷体',
+    '可选显示边框',
+    '实时预览效果',
+    '一键复制文本'
+  ],
+  
+  howToUse: [
+    '粘贴或输入古文文本',
+    '选择显示模式（横排/竖排）',
+    '调整字体、字号和行距',
+    '预览显示效果',
+    '可复制文本用于其他用途'
+  ],
+  
+  introduction: `古籍传统上采用竖排排版，从右到左阅读。本工具可以将文字在竖排和横排之间切换，适应不同的阅读习惯。
+
+竖排模式适合阅读古籍原文，更有古典韵味；横排模式则更符合现代阅读习惯，便于快速浏览。
+
+工具还提供字体、字号、行距等设置，可以根据个人喜好调整显示效果。`,
+
+  faq: [
+    {
+      question: '竖排阅读有什么好处？',
+      answer: '竖排是古籍的传统排版方式，更能体现古文的韵味，也有助于理解古人的阅读习惯。'
+    },
+    {
+      question: '可以导出竖排文档吗？',
+      answer: '当前版本仅支持在线预览。如需导出，可以截图或使用EPUB生成工具。'
+    },
+    {
+      question: '为什么有些字显示不正常？',
+      answer: '可能是字体不支持某些生僻字。可以尝试切换不同的字体。'
+    },
+    {
+      question: '支持繁体字吗？',
+      answer: '支持。工具不会改变文字内容，只改变显示方向。'
+    }
+  ],
+  
+  isOffline: true,
+  isFree: true
+}
 
 const inputText = ref('')
 const mode = ref<'v2h' | 'h2v'>('v2h')
@@ -54,11 +119,8 @@ function loadExample() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">竖横排转换</h1>
-      <p class="tool-desc">将文字在竖排和横排之间切换显示，适配不同阅读习惯</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
 
     <!-- 模式切换 -->
     <div class="mode-switch">
@@ -146,27 +208,18 @@ function loadExample() {
 
     <div class="footer-actions">
       <button class="btn-text" @click="clearAll">清空</button>
+      <ToolFeedback tool-name="竖横排转换" />
     </div>
-
-    <RelatedTools />
-  </div>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page {
-  @apply max-w-5xl mx-auto;
-}
-.tool-header {
-  @apply mb-6;
-}
-.tool-title {
-  @apply text-2xl font-bold text-stone-800;
-}
-.tool-desc {
-  @apply text-stone-600 mt-1;
+.tool-body {
+  @apply max-w-5xl mx-auto space-y-6;
 }
 .mode-switch {
-  @apply flex gap-2 mb-6;
+  @apply flex gap-2;
 }
 .mode-btn {
   @apply px-6 py-2 bg-white border border-stone-200 rounded-lg

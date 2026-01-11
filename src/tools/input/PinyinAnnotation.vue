@@ -1,11 +1,84 @@
 <script setup lang="ts">
 /**
- * 拼音注音
- * 为汉字添加拼音/注音标注，支持 AI 生成
+ * 拼音注音工具
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '拼音注音',
+  path: '/input/pinyin-annotation',
+  category: '输入处理',
+  categoryPath: '/input',
+  
+  description: '免费在线古文拼音注音工具。为古籍文言文添加拼音、注音符号或粤语拼音标注，支持AI智能生成，点击汉字可查看详情。',
+  keywords: ['拼音注音', '古文注音', '注音符号', '粤语拼音', '文言文', 'AI注音', '汉字拼音'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '为古文添加拼音/注音/粤语标注，支持 AI 智能生成',
+  
+  features: [
+    '支持拼音、注音符号、粤语拼音三种模式',
+    'AI 智能补充生僻字读音',
+    '可选显示声调符号',
+    '上方标注或行内显示两种样式',
+    '点击汉字可查看字形详情',
+    '一键复制标注结果',
+    '内置常用古文示例',
+    '本地缓存AI生成结果'
+  ],
+  
+  howToUse: [
+    '在输入框中粘贴或输入古文文本',
+    '选择注音模式（拼音/注音符号/粤语）',
+    '选择显示样式（上方标注/行内显示）',
+    '点击「开始标注」生成注音',
+    '点击汉字可跳转查看字形详情'
+  ],
+  
+  introduction: `阅读古籍文言文时，经常会遇到生僻字或多音字，不确定正确读音。本工具可以为古文自动添加拼音标注，帮助您准确朗读和理解古籍内容。
+
+工具支持三种注音模式：普通话拼音（带声调）、注音符号（ㄅㄆㄇㄈ）和粤语拼音。您可以根据需要选择合适的模式。显示样式也有两种选择：上方标注（Ruby样式）更美观，行内显示更紧凑。
+
+对于常用字，工具内置了读音数据库，可以快速标注。对于生僻字，可以启用AI智能补充功能，通过DeepSeek API获取准确读音。AI生成的结果会缓存到本地，下次使用时无需重复请求。`,
+
+  faq: [
+    {
+      question: '支持哪些注音模式？',
+      answer: '支持三种模式：普通话拼音（带声调符号或数字）、注音符号（台湾常用的ㄅㄆㄇㄈ）、粤语拼音（粤拼）。'
+    },
+    {
+      question: 'AI功能需要付费吗？',
+      answer: 'AI功能使用DeepSeek API，需要您自己的API Key。DeepSeek提供免费额度，一般个人使用足够。'
+    },
+    {
+      question: '如何获取DeepSeek API Key？',
+      answer: '访问 platform.deepseek.com 注册账号，在控制台创建API Key即可。'
+    },
+    {
+      question: '不使用AI可以标注吗？',
+      answer: '可以。工具内置了常用字的读音数据，不使用AI也能标注大部分常用字，只是生僻字可能显示问号。'
+    },
+    {
+      question: '点击汉字有什么功能？',
+      answer: '点击任意汉字可以跳转到字形详情页，查看该字的字形演变、释义等信息。'
+    },
+    {
+      question: '标注结果可以复制吗？',
+      answer: '可以。点击「复制结果」按钮可以复制带拼音的文本，格式为拼音在上、汉字在下。'
+    }
+  ],
+  
+  isOffline: false,
+  isFree: true
+}
 
 const router = useRouter()
 const inputText = ref('')
@@ -232,12 +305,7 @@ function useExample(text: string) {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1>🔤 拼音注音</h1>
-      <p>为古文添加拼音/注音/粤语标注，支持 AI 生成</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <!-- 设置区域 -->
     <div class="settings-section">
       <div class="setting-group">
@@ -289,10 +357,13 @@ function useExample(text: string) {
       </div>
       
       <div class="input-actions">
-        <button class="annotate-btn" @click="doAnnotate" :disabled="processing || !inputText.trim()">
-          {{ processing ? '标注中...' : '开始标注' }}
-        </button>
-        <button class="clear-btn" @click="clearAll">清空</button>
+        <div class="actions-left">
+          <button class="btn-primary" @click="doAnnotate" :disabled="processing || !inputText.trim()">
+            {{ processing ? '标注中...' : '开始标注' }}
+          </button>
+          <button class="btn-secondary" @click="clearAll">清空</button>
+        </div>
+        <ToolFeedback tool-name="拼音注音" />
       </div>
     </div>
 
@@ -325,55 +396,103 @@ function useExample(text: string) {
       
       <button class="copy-btn" @click="copyAsText">复制结果</button>
     </div>
-
-    <!-- 相关工具 -->
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-4xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-header h1 { @apply text-xl md:text-2xl font-bold text-stone-800; }
-.tool-header p { @apply text-stone-500 mt-1; }
+.settings-section {
+  @apply bg-white rounded-xl p-4 mb-4 flex flex-wrap gap-6;
+}
+.setting-group label:first-child {
+  @apply block text-sm text-stone-600 mb-2;
+}
+.radio-group {
+  @apply flex flex-wrap gap-4;
+}
+.radio-group label {
+  @apply flex items-center gap-1 text-sm cursor-pointer;
+}
+.checkbox {
+  @apply flex items-center gap-2 text-sm cursor-pointer;
+}
 
-.settings-section { @apply bg-white rounded-xl p-4 mb-4 flex flex-wrap gap-6; }
-.setting-group label:first-child { @apply block text-sm text-stone-600 mb-2; }
-.radio-group { @apply flex flex-wrap gap-4; }
-.radio-group label { @apply flex items-center gap-1 text-sm cursor-pointer; }
-.checkbox { @apply flex items-center gap-2 text-sm cursor-pointer; }
+.api-panel {
+  @apply bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-center;
+}
+.api-input {
+  @apply w-full max-w-md px-4 py-2 border border-stone-300 rounded-lg my-3;
+}
+.btn-primary {
+  @apply px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50;
+}
+.btn-secondary {
+  @apply px-4 py-2 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300;
+}
+.hint {
+  @apply text-sm text-stone-500;
+}
+.hint a {
+  @apply text-amber-600 hover:underline;
+}
 
-.api-panel { @apply bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-center; }
-.api-input { @apply w-full max-w-md px-4 py-2 border border-stone-300 rounded-lg my-3; }
-.btn-primary { @apply px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600; }
-.hint { @apply text-sm text-stone-500; }
-.hint a { @apply text-amber-600 hover:underline; }
-
-.input-section { @apply bg-white rounded-xl p-4 mb-4; }
+.input-section {
+  @apply bg-white rounded-xl p-4 mb-4;
+}
 .input-section textarea {
   @apply w-full p-3 border border-stone-300 rounded-lg resize-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none;
 }
 
-.examples { @apply flex flex-wrap gap-2 mt-3 text-sm; }
-.examples span { @apply text-stone-500; }
-.examples button { @apply px-2 py-1 bg-stone-100 rounded hover:bg-stone-200 text-stone-600; }
+.examples {
+  @apply flex flex-wrap gap-2 mt-3 text-sm;
+}
+.examples span {
+  @apply text-stone-500;
+}
+.examples button {
+  @apply px-2 py-1 bg-stone-100 rounded hover:bg-stone-200 text-stone-600;
+}
 
-.input-actions { @apply flex gap-2 mt-3; }
-.annotate-btn { @apply flex-1 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50; }
-.clear-btn { @apply px-4 py-2 border border-stone-300 rounded-lg hover:bg-stone-50; }
+.input-actions {
+  @apply flex items-center justify-between mt-3;
+}
+.actions-left {
+  @apply flex gap-2;
+}
 
-.result-section { @apply bg-white rounded-xl p-4; }
-.result-section h2 { @apply font-medium text-stone-800 mb-4; }
-.result-section h2 .hint { @apply text-xs text-stone-400 font-normal ml-2; }
+.result-section {
+  @apply bg-white rounded-xl p-4;
+}
+.result-section h2 {
+  @apply font-medium text-stone-800 mb-4;
+}
+.result-section h2 .hint {
+  @apply text-xs text-stone-400 font-normal ml-2;
+}
 
-.ruby-result { @apply text-2xl leading-loose; }
-.ruby-char { @apply inline-block cursor-pointer hover:bg-amber-50 rounded px-0.5; }
-.ruby-char rt { @apply text-xs text-amber-600; }
-.plain-char { @apply inline; }
+.ruby-result {
+  @apply text-2xl leading-loose;
+}
+.ruby-char {
+  @apply inline-block cursor-pointer hover:bg-amber-50 rounded px-0.5;
+}
+.ruby-char rt {
+  @apply text-xs text-amber-600;
+}
+.plain-char {
+  @apply inline;
+}
 
-.inline-result { @apply text-xl leading-relaxed; }
-.inline-char { @apply inline-block mr-1 cursor-pointer hover:bg-amber-50 rounded px-0.5; }
-.inline-char sub { @apply text-xs text-amber-600 ml-0.5; }
+.inline-result {
+  @apply text-xl leading-relaxed;
+}
+.inline-char {
+  @apply inline-block mr-1 cursor-pointer hover:bg-amber-50 rounded px-0.5;
+}
+.inline-char sub {
+  @apply text-xs text-amber-600 ml-0.5;
+}
 
-.copy-btn { @apply w-full mt-4 py-2 border border-stone-300 rounded-lg hover:bg-stone-50; }
+.copy-btn {
+  @apply w-full mt-4 py-2 border border-stone-300 rounded-lg hover:bg-stone-50;
+}
 </style>

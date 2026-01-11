@@ -1,12 +1,81 @@
 <script setup lang="ts">
 /**
  * 划词释义工具
- * 选中文字显示释义，支持 AI 动态生成
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCharacterData, type CharacterData } from '@core/services/aiContent'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '划词释义',
+  path: '/read/dictionary',
+  category: '阅读辅助',
+  categoryPath: '/read',
+  
+  description: '免费在线古文划词释义工具。点击或选中汉字即可查看释义、异体字、韵部等信息，支持AI动态生成。',
+  keywords: ['划词释义', '古文字典', '汉字释义', '异体字', '韵部查询', '古文阅读'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '点击汉字查看释义、异体字、韵部等信息',
+  
+  features: [
+    '点击单字即时查询',
+    '显示基本义和古义',
+    '显示英文释义',
+    '显示异体字关联',
+    '显示平水韵韵部',
+    '显示反切注音',
+    '支持AI动态生成',
+    '可跳转详情页面'
+  ],
+  
+  howToUse: [
+    '粘贴或输入古文文本',
+    '点击任意汉字查看释义',
+    '查看基本义、古义、异体字等',
+    '点击「详情页」查看完整信息',
+    '配置API Key可查询任意汉字'
+  ],
+  
+  introduction: `阅读古籍时经常遇到生僻字或古今异义词，本工具可以帮助快速查询汉字的释义和相关信息。
+
+工具内置了常用古文字词的释义数据，包括基本义、古义、英文释义、异体字和韵部信息。对于未收录的字，可以配置DeepSeek API Key使用AI动态生成。
+
+点击「详情页」可以跳转到该字的独立页面，查看更完整的信息包括字形演变等。`,
+
+  faq: [
+    {
+      question: '为什么有些字查不到？',
+      answer: '内置词典只收录了常用古文字词。配置API Key后可以查询任意汉字。'
+    },
+    {
+      question: 'API Key如何获取？',
+      answer: '访问 platform.deepseek.com 注册账号即可获取API Key。'
+    },
+    {
+      question: '异体字有什么用？',
+      answer: '异体字是同一个字的不同写法，了解异体字有助于阅读不同版本的古籍。'
+    },
+    {
+      question: '韵部信息有什么用？',
+      answer: '韵部信息对于理解古诗词的押韵和音韵学研究很有帮助。'
+    },
+    {
+      question: 'AI生成的内容准确吗？',
+      answer: 'AI生成的内容仅供参考，重要研究请以权威字典为准。'
+    }
+  ],
+  
+  isOffline: false,
+  isFree: true
+}
 
 const router = useRouter()
 const inputText = ref('')
@@ -169,11 +238,8 @@ function clearAll() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">划词释义</h1>
-      <p class="tool-desc">点击或选中文字查看释义，支持 AI 动态生成</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
 
     <!-- API Key 输入 -->
     <div v-if="showApiKeyInput" class="api-panel">
@@ -286,6 +352,7 @@ function clearAll() {
 
     <div class="footer-actions">
       <button class="btn-text" @click="clearAll">清空</button>
+      <ToolFeedback tool-name="划词释义" />
     </div>
 
     <!-- 说明 -->
@@ -298,23 +365,19 @@ function clearAll() {
         <li>每个查询的汉字都会生成独立页面</li>
       </ul>
     </div>
-
-    <RelatedTools />
-  </div>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-4xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-title { @apply text-2xl font-bold text-stone-800; }
-.tool-desc { @apply text-stone-600 mt-1; }
+.tool-body { @apply max-w-4xl mx-auto space-y-6; }
 
-.api-panel { @apply bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-center; }
+.api-panel { @apply bg-amber-50 border border-amber-200 rounded-lg p-4 text-center; }
 .api-input { @apply px-4 py-2 border border-stone-300 rounded-lg mx-2; }
 .hint { @apply text-sm text-stone-500 mt-2; }
 .hint a { @apply text-amber-600 hover:underline; }
 
-.tool-body { @apply grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6; }
+.content-body { @apply grid grid-cols-1 lg:grid-cols-3 gap-6; }
 .text-section { @apply lg:col-span-2 bg-white rounded-xl border border-stone-200 p-4; }
 .section-header { @apply flex justify-between items-center mb-3; }
 .section-header h3 { @apply font-medium text-stone-800; }

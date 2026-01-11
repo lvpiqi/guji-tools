@@ -1,7 +1,80 @@
 <script setup lang="ts">
+/**
+ * 自动翻译工具
+ * SEO 优化版本
+ */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '古文翻译',
+  path: '/read/translate',
+  category: '阅读辅助',
+  categoryPath: '/read',
+  
+  description: '免费在线古文翻译工具。使用AI将文言文翻译为现代汉语和英文，支持直译和意译两种风格。',
+  keywords: ['古文翻译', '文言文翻译', '古文白话', '古籍翻译', 'AI翻译', '中英翻译'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '文言文翻译为现代汉语和英文',
+  
+  features: [
+    '文言文转现代汉语',
+    '现代汉语转英文',
+    '支持直译风格',
+    '支持意译风格',
+    '可选翻译目标语言',
+    '点击汉字查看释义',
+    '一键复制翻译结果',
+    '使用DeepSeek AI'
+  ],
+  
+  howToUse: [
+    '配置DeepSeek API Key',
+    '输入要翻译的文言文',
+    '选择翻译目标和风格',
+    '点击「开始翻译」',
+    '查看翻译结果，可复制使用'
+  ],
+  
+  introduction: `阅读古籍时，将文言文翻译为现代汉语可以帮助理解文意。本工具使用AI进行翻译，支持翻译为现代汉语和英文。
+
+直译风格尽量保持原文结构，逐字逐句翻译；意译风格则更注重表达原文的意思，语言更加流畅自然。
+
+翻译结果中的汉字可以点击查看释义，方便深入理解每个字词的含义。`,
+
+  faq: [
+    {
+      question: '翻译准确吗？',
+      answer: 'AI翻译仅供参考，重要文献请以专业译本为准。'
+    },
+    {
+      question: '直译和意译有什么区别？',
+      answer: '直译保持原文结构，意译更注重流畅表达。古文建议先用直译理解，再看意译。'
+    },
+    {
+      question: 'API Key如何获取？',
+      answer: '访问 platform.deepseek.com 注册账号即可获取API Key。'
+    },
+    {
+      question: '翻译有字数限制吗？',
+      answer: '建议单次翻译不超过500字，过长的文本可能影响翻译质量。'
+    },
+    {
+      question: '可以翻译诗词吗？',
+      answer: '可以，但诗词的韵律和意境难以完全传达，翻译仅供理解大意。'
+    }
+  ],
+  
+  isOffline: false,
+  isFree: true
+}
 
 const router = useRouter()
 const inputText = ref('')
@@ -60,75 +133,68 @@ function useEx(t: string) { inputText.value = t; doTranslate() }
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1>🌐 自动翻译</h1>
-      <p>文言文 → 现代汉语 → 英文</p>
-    </header>
-    <div class="settings-section">
-      <div class="setting-group">
-        <label>翻译目标</label>
-        <div class="radio-group">
-          <label><input type="radio" v-model="targetLang" value="modern" /> 现代汉语</label>
-          <label><input type="radio" v-model="targetLang" value="english" /> 英文</label>
-          <label><input type="radio" v-model="targetLang" value="both" /> 两者都要</label>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
+      <div class="settings-section">
+        <div class="setting-group">
+          <label>翻译目标</label>
+          <div class="radio-group">
+            <label><input type="radio" v-model="targetLang" value="modern" /> 现代汉语</label>
+            <label><input type="radio" v-model="targetLang" value="english" /> 英文</label>
+            <label><input type="radio" v-model="targetLang" value="both" /> 两者都要</label>
+          </div>
+        </div>
+        <div class="setting-group">
+          <label>翻译风格</label>
+          <div class="radio-group">
+            <label><input type="radio" v-model="style" value="literal" /> 直译</label>
+            <label><input type="radio" v-model="style" value="free" /> 意译</label>
+          </div>
         </div>
       </div>
-      <div class="setting-group">
-        <label>翻译风格</label>
-        <div class="radio-group">
-          <label><input type="radio" v-model="style" value="literal" /> 直译</label>
-          <label><input type="radio" v-model="style" value="free" /> 意译</label>
+      <div v-if="!apiKey" class="api-panel">
+        <p>需要配置 DeepSeek API Key：</p>
+        <input v-model="apiKey" type="password" placeholder="sk-..." class="api-input" />
+        <button @click="saveApiKey" class="btn-primary">保存</button>
+      </div>
+      <div class="input-section">
+        <textarea v-model="inputText" placeholder="请输入文言文..." rows="4"></textarea>
+        <div class="examples">
+          <span>示例：</span>
+          <button v-for="(ex, i) in examples" :key="i" @click="useEx(ex)">{{ ex }}</button>
+        </div>
+        <div class="input-actions">
+          <button @click="doTranslate" :disabled="processing || !inputText.trim() || !apiKey" class="translate-btn">
+            {{ processing ? '翻译中...' : '开始翻译' }}
+          </button>
+          <button @click="clear" class="clear-btn">清空</button>
+          <ToolFeedback tool-name="古文翻译" />
+        </div>
+      </div>
+      <div v-if="modernChinese || english" class="result-section">
+        <div v-if="modernChinese" class="result-block">
+          <div class="result-header"><h3>📖 现代汉语</h3><button @click="copy(modernChinese)">复制</button></div>
+          <p class="result-text clickable"><span v-for="(c, i) in modernChinese" :key="i" @click="goToChar(c)">{{ c }}</span></p>
+        </div>
+        <div v-if="english" class="result-block">
+          <div class="result-header"><h3>🌍 English</h3><button @click="copy(english)">复制</button></div>
+          <p class="result-text">{{ english }}</p>
         </div>
       </div>
     </div>
-    <div v-if="!apiKey" class="api-panel">
-      <p>需要配置 DeepSeek API Key：</p>
-      <input v-model="apiKey" type="password" placeholder="sk-..." class="api-input" />
-      <button @click="saveApiKey" class="btn-primary">保存</button>
-    </div>
-    <div class="input-section">
-      <textarea v-model="inputText" placeholder="请输入文言文..." rows="4"></textarea>
-      <div class="examples">
-        <span>示例：</span>
-        <button v-for="(ex, i) in examples" :key="i" @click="useEx(ex)">{{ ex }}</button>
-      </div>
-      <div class="input-actions">
-        <button @click="doTranslate" :disabled="processing || !inputText.trim() || !apiKey" class="translate-btn">
-          {{ processing ? '翻译中...' : '开始翻译' }}
-        </button>
-        <button @click="clear" class="clear-btn">清空</button>
-      </div>
-    </div>
-    <div v-if="modernChinese || english" class="result-section">
-      <div v-if="modernChinese" class="result-block">
-        <div class="result-header"><h3>📖 现代汉语</h3><button @click="copy(modernChinese)">复制</button></div>
-        <p class="result-text clickable"><span v-for="(c, i) in modernChinese" :key="i" @click="goToChar(c)">{{ c }}</span></p>
-      </div>
-      <div v-if="english" class="result-block">
-        <div class="result-header"><h3>🌍 English</h3><button @click="copy(english)">复制</button></div>
-        <p class="result-text">{{ english }}</p>
-      </div>
-    </div>
-
-    <!-- 相关工具 -->
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-4xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-header h1 { @apply text-xl md:text-2xl font-bold text-stone-800; }
-.tool-header p { @apply text-stone-500 mt-1; }
-.settings-section { @apply bg-white rounded-xl p-4 mb-4 flex flex-wrap gap-6; }
+.tool-body { @apply max-w-4xl mx-auto space-y-4; }
+.settings-section { @apply bg-white rounded-xl p-4 flex flex-wrap gap-6; }
 .setting-group label:first-child { @apply block text-sm text-stone-600 mb-2; }
 .radio-group { @apply flex gap-4; }
 .radio-group label { @apply flex items-center gap-1 text-sm cursor-pointer; }
-.api-panel { @apply bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-center; }
+.api-panel { @apply bg-amber-50 border border-amber-200 rounded-lg p-4 text-center; }
 .api-input { @apply w-full max-w-md px-4 py-2 border border-stone-300 rounded-lg my-3; }
 .btn-primary { @apply px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600; }
-.input-section { @apply bg-white rounded-xl p-4 mb-4; }
+.input-section { @apply bg-white rounded-xl p-4; }
 .input-section textarea { @apply w-full p-3 border border-stone-300 rounded-lg resize-none outline-none; }
 .examples { @apply flex flex-wrap gap-2 mt-3 text-sm; }
 .examples span { @apply text-stone-500; }

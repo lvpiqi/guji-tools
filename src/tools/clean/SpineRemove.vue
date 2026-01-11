@@ -1,10 +1,81 @@
 <script setup lang="ts">
 /**
  * 中缝阴影补偿
- * 去除书籍中缝的黑色阴影
+ * SEO 优化版本
  */
-import { ref, onMounted } from 'vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import { ref } from 'vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '中缝去除',
+  path: '/clean/spine-remove',
+  category: '图像清理',
+  categoryPath: '/clean',
+  
+  description: '免费在线古籍中缝阴影去除工具。自动补偿书籍装订处的黑色阴影，让扫描页面更均匀清晰。',
+  keywords: ['中缝去除', '阴影补偿', '书脊阴影', '古籍扫描', '图像修复', '装订阴影'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '去除书籍中缝的黑色阴影，让页面更均匀',
+  
+  features: [
+    '可调节中缝位置（20%-80%）',
+    '可调节中缝宽度',
+    '可调节补偿强度',
+    '羽化边缘自然过渡',
+    '实时预览处理效果',
+    '显示中缝位置指示线',
+    '支持常见图片格式',
+    '本地处理保护隐私'
+  ],
+  
+  howToUse: [
+    '上传有中缝阴影的古籍扫描图片',
+    '调整中缝位置对准阴影区域',
+    '设置合适的中缝宽度和补偿强度',
+    '点击「应用补偿」查看效果',
+    '满意后下载处理结果'
+  ],
+  
+  introduction: `扫描装订成册的古籍时，书脊处常会产生黑色阴影，影响阅读和后续处理。本工具可以自动补偿这些阴影区域的亮度。
+
+工具会分析中缝区域和边缘区域的亮度差异，然后对中缝区域进行亮度补偿，使整个页面亮度更加均匀。羽化功能可以让补偿区域与周围自然过渡，避免明显的边界。
+
+建议先调整中缝位置对准阴影最深处，然后逐步调整宽度和强度，直到效果满意。`,
+
+  faq: [
+    {
+      question: '中缝位置如何确定？',
+      answer: '红色虚线表示中缝中心位置。调整滑块使虚线对准阴影最深的位置。'
+    },
+    {
+      question: '补偿强度设多少合适？',
+      answer: '通常70-90%效果较好。强度太高可能导致中缝区域过亮。'
+    },
+    {
+      question: '羽化有什么作用？',
+      answer: '羽化可以让补偿区域边缘自然过渡，避免出现明显的亮度分界线。'
+    },
+    {
+      question: '适合什么样的图片？',
+      answer: '适合有明显中缝阴影的书籍扫描件。单页扫描或平铺扫描的图片不需要此处理。'
+    },
+    {
+      question: '处理后文字会变淡吗？',
+      answer: '补偿主要针对背景区域，文字区域影响较小。如果文字变淡，可以降低补偿强度。'
+    }
+  ],
+  
+  supportedFormats: ['JPG', 'PNG', 'WebP'],
+  maxFileSize: 20,
+  isOffline: true,
+  isFree: true
+}
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const originalImage = ref<HTMLImageElement | null>(null)
@@ -163,71 +234,64 @@ function reset() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1>📖 中缝阴影补偿</h1>
-      <p>去除书籍中缝的黑色阴影，让页面更均匀</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
+      <!-- 上传区域 -->
+      <div v-if="!originalImage" class="upload-zone">
+        <input type="file" accept="image/*" @change="handleFileSelect" class="file-input" />
+        <div class="upload-hint">
+          <span class="icon">📷</span>
+          <p>上传书籍扫描图片</p>
+        </div>
+      </div>
 
-    <!-- 上传区域 -->
-    <div v-if="!originalImage" class="upload-zone">
-      <input type="file" accept="image/*" @change="handleFileSelect" class="file-input" />
-      <div class="upload-hint">
-        <span class="icon">📷</span>
-        <p>上传书籍扫描图片</p>
+      <!-- 编辑区域 -->
+      <div v-else class="editor">
+        <!-- 参数面板 -->
+        <div class="params-panel">
+          <div class="param-item">
+            <label>中缝位置: {{ params.spinePosition }}%</label>
+            <input type="range" v-model.number="params.spinePosition" min="20" max="80" />
+          </div>
+          <div class="param-item">
+            <label>中缝宽度: {{ params.spineWidth }}%</label>
+            <input type="range" v-model.number="params.spineWidth" min="2" max="30" />
+          </div>
+          <div class="param-item">
+            <label>补偿强度: {{ params.strength }}%</label>
+            <input type="range" v-model.number="params.strength" min="0" max="100" />
+          </div>
+          <div class="param-item">
+            <label>羽化程度: {{ params.feather }}%</label>
+            <input type="range" v-model.number="params.feather" min="0" max="100" />
+          </div>
+          
+          <div class="param-actions">
+            <button class="process-btn" @click="processImage" :disabled="processing">
+              {{ processing ? '处理中...' : '应用补偿' }}
+            </button>
+            <button v-if="processed" class="reset-btn" @click="reset">重置</button>
+            <ToolFeedback tool-name="中缝去除" />
+          </div>
+        </div>
+
+        <!-- 画布 -->
+        <div class="canvas-container">
+          <canvas ref="canvasRef"></canvas>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="actions">
+          <button class="change-btn" @click="originalImage = null">更换图片</button>
+          <button v-if="processed" class="download-btn" @click="downloadResult">下载结果</button>
+        </div>
       </div>
     </div>
-
-    <!-- 编辑区域 -->
-    <div v-else class="editor">
-      <!-- 参数面板 -->
-      <div class="params-panel">
-        <div class="param-item">
-          <label>中缝位置: {{ params.spinePosition }}%</label>
-          <input type="range" v-model.number="params.spinePosition" min="20" max="80" />
-        </div>
-        <div class="param-item">
-          <label>中缝宽度: {{ params.spineWidth }}%</label>
-          <input type="range" v-model.number="params.spineWidth" min="2" max="30" />
-        </div>
-        <div class="param-item">
-          <label>补偿强度: {{ params.strength }}%</label>
-          <input type="range" v-model.number="params.strength" min="0" max="100" />
-        </div>
-        <div class="param-item">
-          <label>羽化程度: {{ params.feather }}%</label>
-          <input type="range" v-model.number="params.feather" min="0" max="100" />
-        </div>
-        
-        <div class="param-actions">
-          <button class="process-btn" @click="processImage" :disabled="processing">
-            {{ processing ? '处理中...' : '应用补偿' }}
-          </button>
-          <button v-if="processed" class="reset-btn" @click="reset">重置</button>
-        </div>
-      </div>
-
-      <!-- 画布 -->
-      <div class="canvas-container">
-        <canvas ref="canvasRef"></canvas>
-      </div>
-
-      <!-- 操作按钮 -->
-      <div class="actions">
-        <button class="change-btn" @click="originalImage = null">更换图片</button>
-        <button v-if="processed" class="download-btn" @click="downloadResult">下载结果</button>
-      </div>
-    </div>
-
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-4xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-header h1 { @apply text-xl md:text-2xl font-bold text-stone-800; }
-.tool-header p { @apply text-stone-500 mt-1; }
+.tool-body { @apply max-w-4xl mx-auto space-y-4; }
 
 .upload-zone {
   @apply relative border-2 border-dashed border-stone-300 rounded-xl p-12 text-center cursor-pointer hover:border-amber-400 transition-colors;

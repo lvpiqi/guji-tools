@@ -1,10 +1,83 @@
 <script setup lang="ts">
 /**
  * 自动句读工具
- * 为古文添加标点符号
+ * SEO 优化版本
  */
 import { ref } from 'vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '自动句读',
+  path: '/input/punctuation',
+  category: '输入处理',
+  categoryPath: '/input',
+  
+  description: '免费在线古文自动句读工具。为无标点的文言文自动添加标点符号，基于规则引擎智能断句，支持句号、逗号、问号等多种标点。',
+  keywords: ['自动句读', '古文标点', '文言文断句', '标点符号', '古籍整理', '智能断句'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '为古文自动添加标点符号，基于规则引擎智能断句',
+  
+  features: [
+    '智能识别句末语气词（也、矣、焉、乎等）',
+    '自动识别疑问句和感叹句',
+    '识别引语标记（曰、云、言等）',
+    '处理并列和转折连词',
+    '支持常见判断句式',
+    '长句自动断开',
+    '本地规则引擎，无需联网',
+    '处理结果可编辑修正'
+  ],
+  
+  howToUse: [
+    '在左侧输入框粘贴无标点的古文',
+    '点击「开始句读」按钮',
+    '在右侧查看添加标点后的结果',
+    '根据需要手动修正不准确的地方',
+    '点击「复制」保存结果'
+  ],
+  
+  introduction: `古籍原文通常没有标点符号，阅读和理解都有一定难度。正确的句读（断句）是理解古文的第一步。本工具可以为无标点的文言文自动添加标点符号。
+
+工具基于规则引擎实现，能够识别常见的句末语气词（也、矣、焉、耳、乎、哉等）、疑问词（何、胡、安、孰等）、感叹词（噫、嗟、呜呼等）以及引语标记（曰、云、言等），自动在合适的位置添加句号、逗号、问号、感叹号、冒号等标点。
+
+由于古文句式复杂多变，自动句读的准确率约为70-80%，建议处理后进行人工校对。对于复杂的句式或特殊用法，可能需要手动调整。`,
+
+  faq: [
+    {
+      question: '支持哪些标点符号？',
+      answer: '支持句号、逗号、问号、感叹号、冒号、顿号等常用标点。'
+    },
+    {
+      question: '准确率如何？',
+      answer: '基于规则引擎的准确率约70-80%，建议处理后人工校对，特别是复杂句式。'
+    },
+    {
+      question: '可以处理已有标点的文本吗？',
+      answer: '可以。工具会先移除已有标点，然后重新添加，但建议输入无标点的原文以获得最佳效果。'
+    },
+    {
+      question: '为什么有些地方断句不准确？',
+      answer: '古文句式复杂，同一个词在不同语境下可能有不同用法。规则引擎难以处理所有情况，建议人工校对。'
+    },
+    {
+      question: '有在线API版本吗？',
+      answer: '在线API版本正在开发中，将提供更高的准确率。目前请使用本地规则引擎。'
+    },
+    {
+      question: '处理结果可以编辑吗？',
+      answer: '可以。右侧结果框支持直接编辑，您可以手动修正不准确的地方。'
+    }
+  ],
+  
+  isOffline: true,
+  isFree: true
+}
 
 const inputText = ref('')
 const outputText = ref('')
@@ -151,12 +224,7 @@ function loadExample() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">自动句读</h1>
-      <p class="tool-desc">为古文自动添加标点符号，支持本地规则引擎</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <div class="tool-body">
       <!-- 输入区 -->
       <div class="input-section">
@@ -204,19 +272,22 @@ function loadExample() {
       </div>
       
       <div class="actions">
-        <button
-          class="btn-primary"
-          :disabled="!inputText.trim() || processing"
-          @click="processPunctuation"
-        >
-          {{ processing ? '处理中...' : '开始句读' }}
-        </button>
-        <button
-          class="btn-text"
-          @click="clearAll"
-        >
-          清空
-        </button>
+        <div class="actions-left">
+          <button
+            class="btn-primary"
+            :disabled="!inputText.trim() || processing"
+            @click="processPunctuation"
+          >
+            {{ processing ? '处理中...' : '开始句读' }}
+          </button>
+          <button
+            class="btn-text"
+            @click="clearAll"
+          >
+            清空
+          </button>
+        </div>
+        <ToolFeedback tool-name="自动句读" />
       </div>
     </div>
 
@@ -229,24 +300,10 @@ function loadExample() {
         <li>支持的标点：句号、逗号、问号、感叹号、冒号、顿号</li>
       </ul>
     </div>
-
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page {
-  @apply max-w-4xl mx-auto;
-}
-.tool-header {
-  @apply mb-6;
-}
-.tool-title {
-  @apply text-2xl font-bold text-stone-800;
-}
-.tool-desc {
-  @apply text-stone-600 mt-1;
-}
 .tool-body {
   @apply grid grid-cols-1 md:grid-cols-2 gap-6 mb-6;
 }
@@ -266,7 +323,7 @@ function loadExample() {
   @apply px-3 py-1 text-sm text-amber-600 hover:bg-amber-50 rounded transition-colors;
 }
 .text-input, .text-output {
-  @apply w-full px-3 py-2 border border-stone-200 rounded-lg text-base font-guji
+  @apply w-full px-3 py-2 border border-stone-200 rounded-lg text-base
          focus:border-amber-400 focus:outline-none resize-none leading-relaxed;
 }
 .text-output {
@@ -276,7 +333,7 @@ function loadExample() {
   @apply text-right text-xs text-stone-400 mt-1;
 }
 .tool-footer {
-  @apply flex justify-between items-center mb-6;
+  @apply flex justify-between items-center mb-6 flex-wrap gap-4;
 }
 .settings {
   @apply flex gap-4;
@@ -291,6 +348,9 @@ function loadExample() {
   @apply text-stone-400;
 }
 .actions {
+  @apply flex items-center justify-between flex-1;
+}
+.actions-left {
   @apply flex gap-3;
 }
 .btn-primary {

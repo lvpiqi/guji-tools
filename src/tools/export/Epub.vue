@@ -1,10 +1,81 @@
 <script setup lang="ts">
 /**
  * EPUB生成工具
- * 将文本内容转换为EPUB电子书格式
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: 'EPUB生成',
+  path: '/export/epub',
+  category: '导出分享',
+  categoryPath: '/export',
+  
+  description: '免费在线EPUB电子书生成工具。将古籍文本转换为EPUB格式，支持竖排排版、自定义字体大小和封面图片。',
+  keywords: ['EPUB生成', '电子书制作', '古籍电子书', '竖排电子书', 'EPUB转换', '电子书格式'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '将古籍文本转换为EPUB电子书格式',
+  
+  features: [
+    '支持横排和竖排排版',
+    '可自定义字体大小',
+    '可调节行高间距',
+    '支持添加封面图片',
+    '自动生成目录导航',
+    '符合EPUB 3.0标准',
+    '兼容主流阅读器',
+    '本地生成保护隐私'
+  ],
+  
+  howToUse: [
+    '输入书名和作者信息',
+    '可选上传封面图片',
+    '选择排版方向和字体大小',
+    '粘贴或输入古籍文本内容',
+    '点击「生成EPUB」下载电子书'
+  ],
+  
+  introduction: `EPUB是最流行的电子书格式，被各种阅读器和阅读软件广泛支持。本工具可以将古籍文本快速转换为EPUB格式。
+
+工具支持竖排排版，这是阅读古籍的传统方式。竖排模式下文字从上到下、从右到左排列，更符合古籍阅读习惯。
+
+生成的EPUB文件可以在Kindle、Apple Books、多看阅读等各种阅读器上打开。`,
+
+  faq: [
+    {
+      question: '竖排模式兼容性如何？',
+      answer: '大多数现代阅读器都支持竖排。如果显示异常，可以尝试横排模式。'
+    },
+    {
+      question: '封面图片有什么要求？',
+      answer: '建议使用JPG或PNG格式，尺寸建议600x800像素左右。'
+    },
+    {
+      question: '如何分段落？',
+      answer: '用空行分隔段落。工具会自动识别空行并转换为段落。'
+    },
+    {
+      question: '可以添加章节吗？',
+      answer: '当前版本暂不支持多章节。所有内容会作为一个章节。'
+    },
+    {
+      question: '生成的文件在哪些设备上可以阅读？',
+      answer: 'EPUB是通用格式，可在手机、平板、电脑、电子书阅读器上阅读。'
+    }
+  ],
+  
+  supportedFormats: ['TXT'],
+  maxFileSize: 10,
+  isOffline: true,
+  isFree: true
+}
 
 const title = ref('')
 const author = ref('')
@@ -215,12 +286,7 @@ function reset() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">EPUB电子书生成</h1>
-      <p class="tool-desc">将古籍文本转换为EPUB格式，支持竖排、自定义字体大小</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <div class="tool-body">
       <div class="tool-left">
         <!-- 基本信息 -->
@@ -279,6 +345,7 @@ function reset() {
             下载EPUB
           </button>
           <button class="btn-text" @click="reset">重置</button>
+          <ToolFeedback tool-name="EPUB生成" />
         </div>
       </div>
 
@@ -294,15 +361,10 @@ function reset() {
       </div>
     </div>
 
-    <RelatedTools />
-  </div>
+    </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-6xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-title { @apply text-2xl font-bold text-stone-800; }
-.tool-desc { @apply text-stone-600 mt-1; }
 .tool-body { @apply grid grid-cols-1 lg:grid-cols-2 gap-6; }
 .tool-left { @apply space-y-4; }
 .tool-right { @apply space-y-4; }

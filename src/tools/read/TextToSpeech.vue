@@ -1,10 +1,79 @@
 <script setup lang="ts">
 /**
  * 古文朗读工具
- * 使用 Web Speech API 朗读古文
+ * SEO 优化版本
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '古文朗读',
+  path: '/read/text-to-speech',
+  category: '阅读辅助',
+  categoryPath: '/read',
+  
+  description: '免费在线古文朗读工具。使用浏览器语音合成朗读古文，支持调节语速、音调和音量，按句子分段播放。',
+  keywords: ['古文朗读', '文字转语音', 'TTS', '语音合成', '古籍朗读', '有声古文'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '使用语音合成朗读古文，支持调节语速音调',
+  
+  features: [
+    '使用浏览器原生语音合成',
+    '支持多种中文语音',
+    '可调节语速（0.5x-1.5x）',
+    '可调节音调和音量',
+    '按句子自动分段',
+    '显示当前朗读进度',
+    '支持跳转到任意句子',
+    '完全本地处理'
+  ],
+  
+  howToUse: [
+    '粘贴或输入要朗读的古文',
+    '选择语音和调节语速',
+    '点击播放按钮开始朗读',
+    '可随时暂停或跳转',
+    '点击句子列表可跳转到指定位置'
+  ],
+  
+  introduction: `古文朗读可以帮助理解文意和感受古文的韵律之美。本工具使用浏览器内置的语音合成功能，无需安装任何软件。
+
+工具会自动按句号、问号、感叹号分割文本，逐句朗读。您可以调节语速让朗读更慢更清晰，也可以调节音调让声音更符合您的喜好。
+
+朗读过程中可以随时暂停，也可以点击句子列表跳转到任意位置继续朗读。`,
+
+  faq: [
+    {
+      question: '为什么没有声音？',
+      answer: '请确保系统已安装中文语音包，并且浏览器音量未静音。'
+    },
+    {
+      question: '语音听起来不自然怎么办？',
+      answer: '可以尝试调节语速和音调，或切换不同的语音。不同系统的语音质量有差异。'
+    },
+    {
+      question: '支持哪些浏览器？',
+      answer: '支持Chrome、Edge、Safari等现代浏览器。Firefox支持有限。'
+    },
+    {
+      question: '可以保存为音频文件吗？',
+      answer: '当前版本暂不支持导出音频文件，仅支持在线播放。'
+    },
+    {
+      question: '古文发音准确吗？',
+      answer: '使用现代普通话发音，古音（如入声）无法还原。'
+    }
+  ],
+  
+  isOffline: true,
+  isFree: true
+}
 
 const inputText = ref('')
 const isPlaying = ref(false)
@@ -154,12 +223,7 @@ function clearAll() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">古文朗读</h1>
-      <p class="tool-desc">使用浏览器语音合成朗读古文，支持调节语速和音调</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <div class="tool-body">
       <!-- 文本输入 -->
       <div class="input-section">
@@ -288,32 +352,20 @@ function clearAll() {
 
     <div class="footer-actions">
       <button class="btn-text" @click="clearAll">清空</button>
+      <ToolFeedback tool-name="古文朗读" />
     </div>
 
     <!-- 提示 -->
     <div v-if="availableVoices.length === 0" class="warning">
       ⚠️ 未检测到中文语音，请确保系统已安装中文语音包
     </div>
-
-    <RelatedTools />
-  </div>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page {
-  @apply max-w-3xl mx-auto;
-}
-.tool-header {
-  @apply mb-6;
-}
-.tool-title {
-  @apply text-2xl font-bold text-stone-800;
-}
-.tool-desc {
-  @apply text-stone-600 mt-1;
-}
 .tool-body {
-  @apply space-y-6;
+  @apply max-w-3xl mx-auto space-y-6;
 }
 .input-section, .player-section, .settings-section, .sentences-section {
   @apply bg-white rounded-xl border border-stone-200 p-4;

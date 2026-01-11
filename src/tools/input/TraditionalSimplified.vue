@@ -1,11 +1,84 @@
 <script setup lang="ts">
 /**
  * 繁简转换工具
- * 使用 OpenCC 进行高质量繁简转换
+ * SEO 优化版本
  */
 import { ref, onMounted } from 'vue'
 import * as OpenCC from 'opencc-js'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '繁简转换',
+  path: '/input/traditional-simplified',
+  category: '输入处理',
+  categoryPath: '/input',
+  
+  description: '免费在线繁简体转换工具。高质量繁简体中文转换，支持台湾正体、香港繁体等多种标准，基于OpenCC开源项目。',
+  keywords: ['繁简转换', '繁体转简体', '简体转繁体', 'OpenCC', '台湾正体', '香港繁体', '中文转换'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '高质量繁简体转换，支持台湾正体、香港繁体等多种标准',
+  
+  features: [
+    '繁体 → 简体转换',
+    '简体 → 繁体转换',
+    '支持台湾正体标准',
+    '支持香港繁体标准',
+    '基于OpenCC高质量转换',
+    '一键交换输入输出',
+    '显示字符变化分析',
+    '本地处理，无需联网'
+  ],
+  
+  howToUse: [
+    '选择转换模式（繁→简、简→繁等）',
+    '在左侧输入框粘贴或输入文本',
+    '点击「转换」按钮进行转换',
+    '在右侧查看转换结果',
+    '点击「分析变化」查看具体字符变化'
+  ],
+  
+  introduction: `繁体中文和简体中文之间的转换看似简单，实际上涉及很多细节。不同地区使用的繁体标准也有差异，如台湾正体和香港繁体在某些字的写法上就有所不同。
+
+本工具基于 OpenCC（Open Chinese Convert）开源项目，提供高质量的繁简转换。支持六种转换模式：繁体→简体、简体→繁体、繁体→台湾正体、繁体→香港繁体、简体→台湾正体、简体→香港繁体。
+
+转换完成后，您还可以点击「分析变化」按钮，查看具体哪些字符发生了变化，方便您了解繁简体之间的对应关系。所有转换都在浏览器本地完成，无需联网。`,
+
+  faq: [
+    {
+      question: '繁体、台湾正体、香港繁体有什么区别？',
+      answer: '它们都是繁体字，但在某些字的写法上有差异。如"裡/裏"、"著/着"等，不同地区有不同的习惯用法。'
+    },
+    {
+      question: '转换准确率如何？',
+      answer: '基于OpenCC的转换准确率非常高，能正确处理一对多的字符映射（如简体"发"对应繁体"發/髮"）。'
+    },
+    {
+      question: '可以转换整篇文章吗？',
+      answer: '可以。工具没有字数限制，可以转换任意长度的文本。'
+    },
+    {
+      question: '转换后格式会变化吗？',
+      answer: '不会。工具只转换文字，保留原有的换行、空格等格式。'
+    },
+    {
+      question: '需要联网吗？',
+      answer: '首次加载需要下载转换库（约几百KB），之后可以离线使用。'
+    },
+    {
+      question: '「分析变化」功能是什么？',
+      answer: '点击后会显示转换前后发生变化的字符对照表，方便您了解具体哪些字被转换了。'
+    }
+  ],
+  
+  isOffline: true,
+  isFree: true
+}
 
 const inputText = ref('')
 const outputText = ref('')
@@ -119,12 +192,7 @@ function analyzeChanges() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">繁简转换</h1>
-      <p class="tool-desc">高质量繁简体转换，支持台湾正体、香港繁体等多种标准</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <!-- 转换模式选择 -->
     <div class="mode-selector">
       <label 
@@ -225,26 +293,15 @@ function analyzeChanges() {
 
     <!-- 清空按钮 -->
     <div class="footer-actions">
-      <button class="btn-text" @click="clearAll">清空全部</button>
+      <div class="actions-left">
+        <button class="btn-text" @click="clearAll">清空全部</button>
+      </div>
+      <ToolFeedback tool-name="繁简转换" />
     </div>
-
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page {
-  @apply max-w-5xl mx-auto;
-}
-.tool-header {
-  @apply mb-6;
-}
-.tool-title {
-  @apply text-2xl font-bold text-stone-800;
-}
-.tool-desc {
-  @apply text-stone-600 mt-1;
-}
 .mode-selector {
   @apply flex flex-wrap gap-2 mb-6;
 }
@@ -277,7 +334,7 @@ function analyzeChanges() {
   @apply px-3 py-1 text-sm text-amber-600 hover:bg-amber-50 rounded transition-colors;
 }
 .text-area {
-  @apply w-full px-3 py-2 border border-stone-200 rounded-lg text-base font-guji
+  @apply w-full px-3 py-2 border border-stone-200 rounded-lg text-base
          focus:border-amber-400 focus:outline-none resize-none leading-relaxed;
 }
 .text-area.output {
@@ -310,7 +367,10 @@ function analyzeChanges() {
   @apply px-2 py-1 bg-white rounded text-sm text-blue-700 border border-blue-200;
 }
 .footer-actions {
-  @apply text-center;
+  @apply flex items-center justify-between;
+}
+.actions-left {
+  @apply flex gap-3;
 }
 .btn-text {
   @apply px-4 py-2 text-stone-500 hover:text-stone-700 transition-colors;

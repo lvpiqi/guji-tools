@@ -1,13 +1,81 @@
 <script setup lang="ts">
 /**
  * 异体字搜索工具
- * 输入一个字，显示所有异体字变体
- * 支持 AI 动态生成 + SEO 独立页面
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCharacterData, type CharacterData } from '@core/services/aiContent'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '异体字搜索',
+  path: '/search/variant-search',
+  category: '检索校勘',
+  categoryPath: '/search',
+  
+  description: '免费在线异体字搜索工具。输入汉字查找所有异体字变体，支持AI动态生成，每个字都有独立详情页。',
+  keywords: ['异体字', '异体字查询', '汉字变体', '繁简转换', '古今字', '通假字'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '输入汉字查找所有异体字变体',
+  
+  features: [
+    '查询汉字的所有异体字',
+    '显示基本义和古义',
+    '点击复制异体字',
+    '一键复制全部变体',
+    '支持AI动态生成',
+    '每个字有独立详情页',
+    '快速搜索常用字',
+    '本地缓存查询结果'
+  ],
+  
+  howToUse: [
+    '在搜索框输入单个汉字',
+    '点击「搜索」或按回车',
+    '查看该字的所有异体字',
+    '点击异体字可复制',
+    '点击「详情页」查看更多信息'
+  ],
+  
+  introduction: `异体字是指读音和意义相同但写法不同的汉字。古籍中经常出现异体字，了解异体字有助于阅读不同版本的古籍。
+
+本工具可以查询汉字的所有异体字变体，包括繁简字、古今字、俗字等。内置了常用字的异体字数据，配置API Key后可以查询任意汉字。
+
+每个查询的汉字都会生成独立的详情页面，包含更完整的信息如字形演变、韵部等。`,
+
+  faq: [
+    {
+      question: '什么是异体字？',
+      answer: '异体字是读音和意义相同但写法不同的汉字，如「学」和「學」。'
+    },
+    {
+      question: '为什么有些字查不到异体字？',
+      answer: '可能该字没有异体字，或未收录在数据库中。配置API Key后可以查询更多。'
+    },
+    {
+      question: '繁简字算异体字吗？',
+      answer: '广义上繁简字属于异体字关系，本工具会显示繁简对应。'
+    },
+    {
+      question: '如何复制异体字？',
+      answer: '点击单个异体字可复制该字，点击「复制全部」可复制所有变体。'
+    },
+    {
+      question: 'AI生成的数据准确吗？',
+      answer: 'AI生成的数据仅供参考，重要研究请以权威字典为准。'
+    }
+  ],
+  
+  isOffline: false,
+  isFree: true
+}
 
 const router = useRouter()
 const searchChar = ref('')
@@ -171,11 +239,8 @@ const hasResult = computed(() => searchResult.value && (searchResult.value.varia
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">异体字搜索</h1>
-      <p class="tool-desc">输入汉字查找所有异体字变体，支持 AI 动态生成</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
 
     <!-- 搜索框 -->
     <div class="search-section">
@@ -293,17 +358,16 @@ const hasResult = computed(() => searchResult.value && (searchResult.value.varia
         <li>每个查询的汉字都会生成独立页面，便于搜索引擎收录</li>
       </ul>
     </div>
-
-    <RelatedTools />
-  </div>
+    <div class="footer-actions">
+      <ToolFeedback tool-name="异体字搜索" />
+    </div>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-3xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-title { @apply text-2xl font-bold text-stone-800; }
-.tool-desc { @apply text-stone-600 mt-1; }
-.search-section { @apply bg-white rounded-xl border border-stone-200 p-6 mb-6; }
+.tool-body { @apply max-w-3xl mx-auto space-y-6; }
+.search-section { @apply bg-white rounded-xl border border-stone-200 p-6; }
 .search-box { @apply flex gap-3 mb-4; }
 .search-input { @apply flex-1 px-4 py-3 text-2xl text-center border border-stone-200 rounded-lg focus:border-amber-400 focus:outline-none; }
 .search-btn { @apply px-8 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed; }

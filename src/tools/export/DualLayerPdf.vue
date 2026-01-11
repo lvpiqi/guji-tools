@@ -1,12 +1,83 @@
 <script setup lang="ts">
 /**
  * 双层PDF导出工具
- * 图像层 + 可搜索文本层
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
 import FileDropzone from '@components/common/FileDropzone.vue'
 import ProgressBar from '@components/common/ProgressBar.vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '双层PDF',
+  path: '/export/dual-layer-pdf',
+  category: '导出分享',
+  categoryPath: '/export',
+  
+  description: '免费在线双层PDF生成工具。图像作为背景层，透明文字作为搜索层，生成可搜索的古籍PDF文档。',
+  keywords: ['双层PDF', '可搜索PDF', 'OCR PDF', '古籍PDF', '文字层', '图像PDF'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '图像+透明文字层，生成可搜索的PDF文档',
+  
+  features: [
+    '图像作为背景层保持原貌',
+    '透明文字层支持全文搜索',
+    '可自定义文档标题和作者',
+    '支持原始尺寸/A4/A5页面',
+    '支持拖拽调整页面顺序',
+    '可为每页添加OCR文本',
+    '调试模式可显示文字层',
+    '本地生成保护隐私'
+  ],
+  
+  howToUse: [
+    '上传古籍扫描图片（按顺序）',
+    '设置PDF标题和作者信息',
+    '选择页面尺寸（推荐原始尺寸）',
+    '为每页粘贴对应的OCR文本',
+    '点击「生成PDF」下载结果'
+  ],
+  
+  introduction: `双层PDF是古籍数字化的理想格式，它将扫描图像和可搜索文本结合在一起。图像层保持原始扫描效果，文字层则支持全文搜索和复制。
+
+本工具可以将多张扫描图片合并为一个PDF，并为每页添加透明的文字层。文字层默认不可见，但可以被搜索和选中复制。
+
+建议先使用OCR工具识别文字，然后将识别结果粘贴到对应页面的文本框中。`,
+
+  faq: [
+    {
+      question: '文字层有什么用？',
+      answer: '文字层让PDF支持全文搜索和文字复制，方便查找和引用。'
+    },
+    {
+      question: '不添加文字可以吗？',
+      answer: '可以。不添加文字层的PDF就是普通的图像PDF，只是不支持搜索。'
+    },
+    {
+      question: '页面尺寸如何选择？',
+      answer: '「原始尺寸」保持图片原始大小，A4/A5会按比例缩放到标准纸张大小。'
+    },
+    {
+      question: '「显示文字层」有什么用？',
+      answer: '调试用途，可以看到文字层的位置。正式导出时建议关闭。'
+    },
+    {
+      question: '支持多少页？',
+      answer: '理论上没有限制，但页数过多时生成速度会变慢。建议单次不超过100页。'
+    }
+  ],
+  
+  supportedFormats: ['JPG', 'PNG'],
+  maxFileSize: 20,
+  isOffline: true,
+  isFree: true
+}
 
 interface PageItem {
   id: string
@@ -199,12 +270,7 @@ function clearAll() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">双层PDF导出</h1>
-      <p class="tool-desc">图像作为背景 + 透明文字层，生成可搜索的PDF文档</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <div class="tool-body">
       <!-- 左侧：页面管理 -->
       <div class="tool-left">
@@ -302,6 +368,7 @@ function clearAll() {
           >
             {{ processing ? '生成中...' : '生成PDF' }}
           </button>
+          <ToolFeedback tool-name="双层PDF" />
         </div>
 
         <ProgressBar v-if="processing" :value="progress" class="mt-4" />
@@ -333,23 +400,10 @@ function clearAll() {
       </div>
     </div>
 
-    <RelatedTools />
-  </div>
+    </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page {
-  @apply max-w-6xl mx-auto;
-}
-.tool-header {
-  @apply mb-6;
-}
-.tool-title {
-  @apply text-2xl font-bold text-stone-800;
-}
-.tool-desc {
-  @apply text-stone-600 mt-1;
-}
 .tool-body {
   @apply grid grid-cols-1 lg:grid-cols-2 gap-6;
 }

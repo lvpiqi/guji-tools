@@ -1,13 +1,77 @@
 <script setup lang="ts">
 /**
  * 字形演变工具
- * 展示汉字从甲骨文到楷书的演变历程
- * 支持 AI 动态生成 + SEO 独立页面
+ * SEO 优化版本
  */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCharacterData, type CharacterData } from '@core/services/aiContent'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '字形演变',
+  path: '/pro/glyph-evolution',
+  category: '专业工具',
+  categoryPath: '/pro',
+  
+  description: '免费在线汉字字形演变查询工具。查看汉字从甲骨文、金文、篆书、隶书到楷书的演变历程，支持AI动态生成。',
+  keywords: ['字形演变', '甲骨文', '金文', '篆书', '隶书', '汉字演变', '文字学'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '查看汉字从甲骨文到楷书的演变历程',
+  
+  features: [
+    '展示甲骨文字形描述',
+    '展示金文字形描述',
+    '展示篆书字形描述',
+    '展示隶书字形描述',
+    '展示楷书字形描述',
+    '提供演变说明',
+    '支持AI动态生成',
+    '可跳转详情页面'
+  ],
+  
+  howToUse: [
+    '在搜索框输入单个汉字',
+    '点击「查询」或按回车',
+    '查看各阶段的字形描述',
+    '阅读演变说明了解字源',
+    '点击「详情页」查看更多信息'
+  ],
+  
+  introduction: `汉字是世界上最古老的文字之一，经历了数千年的演变。本工具可以帮助了解汉字从甲骨文到楷书的演变历程。
+
+甲骨文是商代刻在龟甲兽骨上的文字，是目前发现的最早的成熟汉字。金文是周代铸刻在青铜器上的文字。篆书是秦始皇统一文字后的标准字体。隶书是汉代通行的字体。楷书是魏晋以后的标准字体。
+
+了解字形演变有助于理解汉字的构造原理和文化内涵。`,
+
+  faq: [
+    {
+      question: '字形描述准确吗？',
+      answer: '内置数据基于文字学研究，AI生成的数据仅供参考。'
+    },
+    {
+      question: '为什么没有字形图片？',
+      answer: '当前版本提供文字描述，字形图片功能正在开发中。'
+    },
+    {
+      question: '可以查询所有汉字吗？',
+      answer: '内置常用字数据，配置API Key后可查询任意汉字。'
+    },
+    {
+      question: '甲骨文和金文有什么区别？',
+      answer: '甲骨文是商代文字，金文是周代文字，金文比甲骨文更加规整。'
+    }
+  ],
+  
+  isOffline: false,
+  isFree: true
+}
 
 const router = useRouter()
 const searchChar = ref('')
@@ -160,11 +224,8 @@ function goToDetailPage() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">字形演变</h1>
-      <p class="tool-desc">查看汉字从甲骨文到楷书的演变历程，支持AI动态生成</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
 
     <!-- 搜索框 -->
     <div class="search-section">
@@ -278,17 +339,16 @@ function goToDetailPage() {
       </ul>
       <p class="mt-2">配置 DeepSeek API Key 后，可查询任意汉字，AI 将自动生成演变信息。</p>
     </div>
-
-    <RelatedTools />
-  </div>
+    <div class="footer-actions">
+      <ToolFeedback tool-name="字形演变" />
+    </div>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-4xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-title { @apply text-2xl font-bold text-stone-800; }
-.tool-desc { @apply text-stone-600 mt-1; }
-.search-section { @apply bg-white rounded-xl border border-stone-200 p-6 mb-6; }
+.tool-body { @apply max-w-4xl mx-auto space-y-6; }
+.search-section { @apply bg-white rounded-xl border border-stone-200 p-6; }
 .search-box { @apply flex gap-3 mb-4; }
 .search-input { @apply flex-1 px-4 py-3 text-2xl text-center border border-stone-200 rounded-lg focus:border-amber-400 focus:outline-none; }
 .search-btn { @apply px-8 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed; }

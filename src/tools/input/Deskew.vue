@@ -24,7 +24,6 @@ const seoConfig: ToolSeoConfig = {
   categoryPath: '/input',
   
   // SEO Meta
-  title: '自动纠偏裁边 - 古籍图片倾斜校正与白边裁切工具',
   description: '免费在线古籍图片自动纠偏裁边工具。基于OpenCV智能检测倾斜角度，自动矫正歪斜图片，裁切多余白边，支持批量处理，本地运行保护隐私。',
   keywords: ['自动纠偏', '图片裁边', '倾斜校正', '古籍扫描', '图像处理', 'OpenCV', '批量处理', '古籍数字化'],
   ogImage: '/og-images/default.png',

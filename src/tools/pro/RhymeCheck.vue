@@ -1,13 +1,81 @@
 <script setup lang="ts">
 /**
  * 押韵检测工具
- * 检测古诗词的韵部和押韵情况
- * 支持 AI 动态生成韵部数据
+ * SEO 优化版本
  */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCharacterData, type CharacterData } from '@core/services/aiContent'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '押韵检测',
+  path: '/pro/rhyme-check',
+  category: '专业工具',
+  categoryPath: '/pro',
+  
+  description: '免费在线古诗词押韵检测工具。基于平水韵检测韵部和押韵情况，支持AI动态查询未收录字的韵部。',
+  keywords: ['押韵检测', '平水韵', '韵部查询', '古诗词', '诗词格律', '韵脚分析'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '检测古诗词的韵部和押韵情况',
+  
+  features: [
+    '基于平水韵检测',
+    '自动提取韵脚字',
+    '显示韵部和声调',
+    '检测押韵是否正确',
+    '提示平仄混用问题',
+    '支持AI查询未知字',
+    '可跳转字词详情页',
+    '内置经典诗词示例'
+  ],
+  
+  howToUse: [
+    '输入古诗词，每行一句',
+    '点击「检测押韵」进行分析',
+    '查看每句的韵脚和韵部',
+    '查看押韵是否正确',
+    '点击韵脚字查看详情'
+  ],
+  
+  introduction: `押韵是古诗词的重要特征，本工具可以帮助检测诗词的押韵情况。工具基于平水韵，这是宋代以后诗词创作的主要韵书。
+
+平水韵分为平、上、去、入四声，共106韵。工具会自动提取每句的韵脚字，查询其韵部，并检测是否押韵正确。
+
+对于未收录的字，可以配置DeepSeek API Key使用AI动态查询韵部。`,
+
+  faq: [
+    {
+      question: '什么是平水韵？',
+      answer: '平水韵是宋代刘渊编纂的韵书，是近体诗创作的主要依据。'
+    },
+    {
+      question: '为什么有些字显示「未知」？',
+      answer: '内置韵表只收录了常用字，配置API Key后可查询更多。'
+    },
+    {
+      question: '平仄混用是什么意思？',
+      answer: '近体诗通常要求韵脚同为平声或仄声，混用可能不符合格律。'
+    },
+    {
+      question: '可以检测词牌吗？',
+      answer: '可以检测押韵，但词牌的格律检测功能正在开发中。'
+    },
+    {
+      question: 'AI查询的韵部准确吗？',
+      answer: 'AI生成的韵部仅供参考，重要研究请以韵书为准。'
+    }
+  ],
+  
+  isOffline: false,
+  isFree: true
+}
 
 const router = useRouter()
 const inputText = ref('')
@@ -224,11 +292,8 @@ function saveApiKey(key: string) {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">押韵检测</h1>
-      <p class="tool-desc">检测古诗词的韵部和押韵情况，基于平水韵，支持 AI 动态查询</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
 
     <!-- API Key 提示 -->
     <div v-if="!apiKey" class="api-hint">
@@ -353,22 +418,21 @@ function saveApiKey(key: string) {
         <li>配置 API Key 后可自动查询未收录字的韵部</li>
       </ul>
     </div>
-
-    <RelatedTools />
-  </div>
+    <div class="footer-actions">
+      <ToolFeedback tool-name="押韵检测" />
+    </div>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-3xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-title { @apply text-2xl font-bold text-stone-800; }
-.tool-desc { @apply text-stone-600 mt-1; }
+.tool-body { @apply max-w-3xl mx-auto space-y-6; }
 
-.api-hint { @apply bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 text-sm text-blue-700 flex items-center gap-3 flex-wrap; }
+.api-hint { @apply bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700 flex items-center gap-3 flex-wrap; }
 .api-hint a { @apply text-blue-600 underline; }
 .api-input { @apply px-3 py-1 border border-blue-300 rounded text-sm w-48; }
 
-.tool-body { @apply space-y-6; }
+.content-body { @apply space-y-6; }
 .input-section { @apply bg-white rounded-xl border border-stone-200 p-4; }
 .section-header { @apply flex justify-between items-center mb-3 flex-wrap gap-2; }
 .section-header h3 { @apply font-medium text-stone-800; }

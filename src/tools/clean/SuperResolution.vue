@@ -1,14 +1,88 @@
 <script setup lang="ts">
 /**
  * AI超分工具
- * 使用 Canvas 双线性插值实现图像放大
- * 未来可接入 Real-ESRGAN WASM
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
 import FileDropzone from '@components/common/FileDropzone.vue'
 import ImageCompare from '@components/common/ImageCompare.vue'
 import ProgressBar from '@components/common/ProgressBar.vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: 'AI超分辨率',
+  path: '/clean/super-resolution',
+  category: '图像清理',
+  categoryPath: '/clean',
+  
+  description: '免费在线古籍图像超分辨率放大工具。支持2x/3x/4x放大，可选锐化增强和降噪处理，提升古籍扫描件清晰度。',
+  keywords: ['AI超分', '图像放大', '超分辨率', '古籍清晰', '图像增强', '锐化', '降噪'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '提升古籍图像分辨率，支持2x/3x/4x放大，可选锐化增强',
+  
+  features: [
+    '支持2x、3x、4x倍率放大',
+    '高质量双线性插值算法',
+    '可选锐化增强，让文字更清晰',
+    '可选降噪处理，减少噪点',
+    '支持批量处理多张图片',
+    '显示放大前后尺寸对比',
+    '处理前后对比预览',
+    '一键打包下载处理结果'
+  ],
+  
+  howToUse: [
+    '上传需要放大的古籍图片',
+    '选择放大倍数（2x/3x/4x）',
+    '根据需要开启锐化或降噪',
+    '点击「开始放大」进行处理',
+    '在预览区对比效果，满意后下载'
+  ],
+  
+  introduction: `古籍扫描件分辨率不足时，文字会显得模糊，影响阅读和后续处理。本工具可以将图像放大2-4倍，同时保持较好的清晰度。
+
+工具使用高质量的双线性插值算法进行图像放大，并提供锐化增强选项，可以让放大后的文字边缘更加清晰。对于有噪点的图像，还可以开启降噪处理。
+
+放大后的图像可以用于打印、OCR识别或进一步的数字化处理。建议根据实际需求选择合适的放大倍数，过大的倍数可能导致文件体积过大。`,
+
+  faq: [
+    {
+      question: '放大倍数如何选择？',
+      answer: '根据原图分辨率和目标用途选择。一般OCR识别建议2x，打印建议3-4x。倍数越大文件越大。'
+    },
+    {
+      question: '锐化功能有什么作用？',
+      answer: '锐化可以增强图像边缘，让文字更加清晰。对于模糊的扫描件效果明显。'
+    },
+    {
+      question: '降噪功能有什么作用？',
+      answer: '降噪可以减少图像中的噪点，让背景更干净。但可能会轻微降低清晰度。'
+    },
+    {
+      question: '处理速度如何？',
+      answer: '处理速度取决于图片大小和放大倍数。一般2000x3000的图片2x放大约需2-5秒。'
+    },
+    {
+      question: '图片会上传到服务器吗？',
+      answer: '不会。所有处理都在浏览器本地完成，图片不会上传到任何服务器。'
+    },
+    {
+      question: '放大后文件会变大多少？',
+      answer: '文件大小与放大倍数的平方成正比。2x放大约4倍，4x放大约16倍。'
+    }
+  ],
+  
+  supportedFormats: ['JPG', 'PNG', 'WebP'],
+  maxFileSize: 30,
+  isOffline: true,
+  isFree: true
+}
 
 interface Task {
   id: string
@@ -219,12 +293,7 @@ function clearAll() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">AI超分辨率</h1>
-      <p class="tool-desc">提升古籍图像分辨率，支持2x/3x/4x放大，可选锐化增强</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <div class="tool-body">
       <div class="tool-left">
         <FileDropzone
@@ -283,13 +352,16 @@ function clearAll() {
         </div>
 
         <div class="tool-actions">
-          <button class="btn-primary" :disabled="!tasks.length || processing" @click="processAll">
-            {{ processing ? '处理中...' : '开始放大' }}
-          </button>
-          <button class="btn-secondary" :disabled="doneCount === 0" @click="downloadAll">
-            打包下载 ({{ doneCount }})
-          </button>
-          <button class="btn-text" :disabled="!tasks.length" @click="clearAll">清空</button>
+          <div class="actions-left">
+            <button class="btn-primary" :disabled="!tasks.length || processing" @click="processAll">
+              {{ processing ? '处理中...' : '开始放大' }}
+            </button>
+            <button class="btn-secondary" :disabled="doneCount === 0" @click="downloadAll">
+              打包下载 ({{ doneCount }})
+            </button>
+            <button class="btn-text" :disabled="!tasks.length" @click="clearAll">清空</button>
+          </div>
+          <ToolFeedback tool-name="AI超分辨率" />
         </div>
 
         <ProgressBar v-if="processing" :value="progress" class="mt-4" />
@@ -306,9 +378,7 @@ function clearAll() {
         <div v-else class="preview-empty">上传图片开始处理</div>
       </div>
     </div>
-
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>

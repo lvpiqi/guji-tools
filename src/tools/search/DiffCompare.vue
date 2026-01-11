@@ -1,10 +1,79 @@
 <script setup lang="ts">
 /**
  * 版本对比工具
- * 对比两个版本的文本差异
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '版本对比',
+  path: '/search/diff-compare',
+  category: '检索校勘',
+  categoryPath: '/search',
+  
+  description: '免费在线古籍版本对比工具。对比两个版本的文本差异，高亮显示增删改，支持并排和内联两种视图。',
+  keywords: ['版本对比', '文本对比', '差异比较', '古籍校勘', '文字校对', '异文对比'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '对比两个版本的文本差异，高亮显示增删改',
+  
+  features: [
+    '逐字对比文本差异',
+    '高亮显示新增内容',
+    '高亮显示删除内容',
+    '高亮显示修改内容',
+    '并排视图对比',
+    '内联视图对比',
+    '统计增删改数量',
+    '支持交换两个版本'
+  ],
+  
+  howToUse: [
+    '在左侧输入第一个版本的文本',
+    '在右侧输入第二个版本的文本',
+    '点击「开始对比」进行比较',
+    '查看高亮显示的差异',
+    '可切换并排/内联视图'
+  ],
+  
+  introduction: `古籍在流传过程中会产生不同版本，版本之间存在文字差异。本工具可以帮助快速对比两个版本的文本，找出差异之处。
+
+工具使用最长公共子序列算法进行逐字对比，可以准确识别新增、删除和修改的内容。差异部分会用不同颜色高亮显示。
+
+并排视图适合查看两个版本的整体差异，内联视图则更适合查看具体的修改位置。`,
+
+  faq: [
+    {
+      question: '对比算法准确吗？',
+      answer: '使用LCS（最长公共子序列）算法，可以准确识别大部分差异。'
+    },
+    {
+      question: '可以对比多长的文本？',
+      answer: '建议单次对比不超过1万字，过长的文本可能导致处理变慢。'
+    },
+    {
+      question: '并排和内联视图有什么区别？',
+      answer: '并排视图左右对照显示，内联视图在同一行显示差异。'
+    },
+    {
+      question: '可以导出对比结果吗？',
+      answer: '当前版本暂不支持导出，可以截图保存。'
+    },
+    {
+      question: '支持繁简对比吗？',
+      answer: '支持。繁简字会被识别为不同的字，显示为修改。'
+    }
+  ],
+  
+  isOffline: true,
+  isFree: true
+}
 
 const textA = ref('')
 const textB = ref('')
@@ -158,11 +227,8 @@ function loadExample() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">版本对比</h1>
-      <p class="tool-desc">对比两个版本的文本差异，高亮显示增删改</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
 
     <!-- 输入区 -->
     <div class="input-section">
@@ -206,6 +272,7 @@ function loadExample() {
         开始对比
       </button>
       <button class="btn-text" @click="clearAll">清空</button>
+      <ToolFeedback tool-name="版本对比" />
     </div>
 
     <!-- 对比结果 -->
@@ -280,25 +347,16 @@ function loadExample() {
       </div>
     </div>
 
-    <RelatedTools />
-  </div>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page {
-  @apply max-w-5xl mx-auto;
-}
-.tool-header {
-  @apply mb-6;
-}
-.tool-title {
-  @apply text-2xl font-bold text-stone-800;
-}
-.tool-desc {
-  @apply text-stone-600 mt-1;
+.tool-body {
+  @apply max-w-5xl mx-auto space-y-6;
 }
 .input-section {
-  @apply flex gap-4 mb-6;
+  @apply flex gap-4;
 }
 .input-col {
   @apply flex-1 bg-white rounded-xl border border-stone-200 p-4;

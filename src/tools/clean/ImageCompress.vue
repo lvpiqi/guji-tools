@@ -1,10 +1,81 @@
 <script setup lang="ts">
 /**
  * 视觉无损压缩
- * 支持 WebP/AVIF 格式转换，大幅减小文件体积
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '图片压缩',
+  path: '/clean/image-compress',
+  category: '图像清理',
+  categoryPath: '/clean',
+  
+  description: '免费在线古籍图片压缩工具。支持WebP/AVIF格式转换，视觉无损压缩，大幅减小文件体积，节省存储空间。',
+  keywords: ['图片压缩', 'WebP转换', 'AVIF转换', '图像优化', '文件压缩', '古籍图片'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '转换为WebP/AVIF格式，大幅减小文件体积',
+  
+  features: [
+    '支持WebP、AVIF、JPEG格式输出',
+    '可调节压缩质量（50%-100%）',
+    '可限制最大宽度自动缩放',
+    '批量压缩多张图片',
+    '显示压缩前后大小对比',
+    '显示节省空间百分比',
+    '一键打包下载所有结果',
+    '本地处理保护隐私'
+  ],
+  
+  howToUse: [
+    '上传需要压缩的古籍图片',
+    '选择输出格式（推荐WebP）',
+    '调整压缩质量（推荐85%）',
+    '点击「开始压缩」进行处理',
+    '查看压缩效果，下载结果'
+  ],
+  
+  introduction: `古籍扫描件通常文件较大，不便于存储和传输。本工具可以将图片转换为更高效的格式，在保持视觉质量的同时大幅减小文件体积。
+
+WebP格式是目前最推荐的选择，兼容性好且压缩率高，通常可以减少50%-70%的文件大小。AVIF是更新的格式，压缩率更高，但兼容性稍差。
+
+压缩质量建议设置在80-90%之间，这个范围内视觉差异几乎不可察觉，但文件大小会显著减小。`,
+
+  faq: [
+    {
+      question: '哪种格式压缩效果最好？',
+      answer: 'AVIF压缩率最高，但兼容性较差。WebP是最佳平衡选择，兼容性好且压缩率高。'
+    },
+    {
+      question: '压缩后画质会下降吗？',
+      answer: '85%以上的质量设置，视觉上几乎看不出差异。古籍文字类图片尤其适合压缩。'
+    },
+    {
+      question: '最大宽度限制有什么用？',
+      answer: '可以在压缩的同时缩小图片尺寸，进一步减小文件大小。设为0表示不限制。'
+    },
+    {
+      question: '压缩速度如何？',
+      answer: '取决于图片大小和数量。单张2000x3000的图片通常在1-2秒内完成。'
+    },
+    {
+      question: '图片会上传到服务器吗？',
+      answer: '不会。所有处理都在浏览器本地完成，图片不会上传到任何服务器。'
+    }
+  ],
+  
+  supportedFormats: ['JPG', 'PNG', 'BMP', 'WebP'],
+  maxFileSize: 30,
+  isOffline: true,
+  isFree: true
+}
 
 const files = ref<File[]>([])
 const results = ref<Array<{ name: string; original: number; compressed: number; url: string; format: string }>>([])
@@ -144,11 +215,8 @@ const totalSaved = computed(() => {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1>🗜️ 视觉无损压缩</h1>
-      <p>转换为 WebP/AVIF 格式，大幅减小文件体积，视觉质量几乎无损</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
 
     <!-- 设置 -->
     <div class="settings-section">
@@ -195,9 +263,12 @@ const totalSaved = computed(() => {
         <span class="file-size">{{ formatSize(file.size) }}</span>
         <button @click="removeFile(i)" class="remove-btn">×</button>
       </div>
-      <button class="compress-btn" @click="doCompress" :disabled="processing">
-        {{ processing ? `压缩中 ${progress}%` : '开始压缩' }}
-      </button>
+      <div class="compress-btn-row">
+        <button class="compress-btn" @click="doCompress" :disabled="processing">
+          {{ processing ? `压缩中 ${progress}%` : '开始压缩' }}
+        </button>
+        <ToolFeedback tool-name="图片压缩" />
+      </div>
     </div>
 
     <!-- 结果 -->
@@ -214,18 +285,13 @@ const totalSaved = computed(() => {
       </div>
     </div>
 
-    <!-- 相关工具 -->
-    <RelatedTools />
-  </div>
+    </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-4xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-header h1 { @apply text-xl md:text-2xl font-bold text-stone-800; }
-.tool-header p { @apply text-stone-500 mt-1; }
+.tool-body { @apply max-w-4xl mx-auto space-y-4; }
 
-.settings-section { @apply bg-white rounded-xl p-4 mb-4 space-y-4; }
+.settings-section { @apply bg-white rounded-xl p-4 space-y-4; }
 .setting-group label:first-child { @apply block text-sm text-stone-600 mb-2; }
 .radio-group { @apply flex flex-col gap-2; }
 .radio-group label { @apply flex items-center gap-2 text-sm cursor-pointer; }
@@ -235,12 +301,12 @@ const totalSaved = computed(() => {
 .num-input { @apply w-32 px-3 py-1 border border-stone-300 rounded; }
 
 .upload-zone {
-  @apply bg-white border-2 border-dashed border-stone-300 rounded-xl p-8 text-center cursor-pointer hover:border-amber-400 transition-colors mb-4;
+  @apply bg-white border-2 border-dashed border-stone-300 rounded-xl p-8 text-center cursor-pointer hover:border-amber-400 transition-colors;
 }
 .upload-text { @apply text-stone-600 mb-1; }
 .upload-hint { @apply text-sm text-stone-400; }
 
-.file-list { @apply bg-white rounded-xl p-4 mb-4; }
+.file-list { @apply bg-white rounded-xl p-4; }
 .file-header { @apply flex justify-between items-center mb-3 pb-2 border-b border-stone-200; }
 .clear-btn { @apply text-sm text-stone-500 hover:text-red-500; }
 .file-item { @apply flex items-center gap-3 py-2 border-b border-stone-100 last:border-0; }
@@ -248,6 +314,7 @@ const totalSaved = computed(() => {
 .file-size { @apply text-sm text-stone-500; }
 .remove-btn { @apply w-6 h-6 text-stone-400 hover:text-red-500; }
 .compress-btn { @apply w-full mt-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50; }
+.compress-btn-row { @apply flex gap-3 mt-4; }
 
 .result-section { @apply bg-white rounded-xl p-4; }
 .result-summary { @apply flex justify-between items-center mb-4 pb-3 border-b border-stone-200; }

@@ -1,10 +1,81 @@
 <script setup lang="ts">
 /**
  * 空白/重复页检测
- * 自动检测空白页和重复页，支持批量删除
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '空白页检测',
+  path: '/clean/blank-detect',
+  category: '图像清理',
+  categoryPath: '/clean',
+  
+  description: '免费在线古籍空白页和重复页检测工具。自动识别空白页、重复扫描页，批量清理无效页面，提高古籍数字化效率。',
+  keywords: ['空白页检测', '重复页检测', '古籍清理', '批量删除', '图像去重', '扫描件整理'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '自动检测空白页和重复页，批量清理无效页面',
+  
+  features: [
+    '自动检测空白页（基于亮度分析）',
+    '智能识别重复页（感知哈希算法）',
+    '可调节空白页亮度阈值',
+    '可调节重复检测灵敏度',
+    '支持批量选中问题页',
+    '一键删除选中页面',
+    '导出清理后的图片包',
+    '按文件名自动排序'
+  ],
+  
+  howToUse: [
+    '上传需要检测的古籍扫描图片',
+    '调整空白页阈值和重复检测灵敏度',
+    '点击「开始检测」进行分析',
+    '查看检测结果，点击「选中问题页」',
+    '确认后删除选中页或导出清理后的图片'
+  ],
+  
+  introduction: `古籍扫描过程中常会产生空白页和重复扫描的页面，手动逐一检查非常耗时。本工具可以自动检测这些问题页面。
+
+空白页检测基于图像亮度分析，当页面平均亮度超过设定阈值时判定为空白页。重复页检测使用感知哈希算法，可以识别内容相似的页面。
+
+检测完成后，可以一键选中所有问题页，确认无误后批量删除，最后导出清理后的图片包。`,
+
+  faq: [
+    {
+      question: '空白页阈值如何设置？',
+      answer: '默认95%适合大多数情况。如果有浅色背景的页面被误判，可以适当提高阈值。'
+    },
+    {
+      question: '重复检测灵敏度如何调整？',
+      answer: '灵敏度越高，越容易检测到相似页面。如果误判较多，可以降低灵敏度。'
+    },
+    {
+      question: '检测速度如何？',
+      answer: '取决于图片数量和大小。100张图片通常在10-30秒内完成检测。'
+    },
+    {
+      question: '会误删重要页面吗？',
+      answer: '工具只是标记问题页，删除前需要您确认。建议仔细检查后再删除。'
+    },
+    {
+      question: '支持哪些图片格式？',
+      answer: '支持常见的 JPG、PNG、WebP 等图片格式。'
+    }
+  ],
+  
+  supportedFormats: ['JPG', 'PNG', 'WebP', 'BMP'],
+  maxFileSize: 20,
+  isOffline: true,
+  isFree: true
+}
 
 interface PageInfo {
   file: File
@@ -193,11 +264,8 @@ const stats = computed(() => ({
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1>🔍 空白/重复页检测</h1>
-      <p>自动检测空白页和重复页，批量清理无效页面</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
 
     <!-- 设置 -->
     <div class="settings-section">
@@ -236,6 +304,7 @@ const stats = computed(() => ({
       </button>
       <button @click="exportClean" class="export-btn">导出清理后</button>
       <button @click="clearAll" class="clear-btn">清空</button>
+      <ToolFeedback tool-name="空白页检测" />
     </div>
 
     <!-- 统计 -->
@@ -263,30 +332,24 @@ const stats = computed(() => ({
       </div>
     </div>
 
-    <!-- 相关工具 -->
-    <RelatedTools />
-  </div>
+    </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-6xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-header h1 { @apply text-xl md:text-2xl font-bold text-stone-800; }
-.tool-header p { @apply text-stone-500 mt-1; }
-
-.settings-section { @apply bg-white rounded-xl p-4 mb-4 flex flex-wrap gap-6; }
+.tool-body { @apply space-y-4; }
+.settings-section { @apply bg-white rounded-xl p-4 flex flex-wrap gap-6; }
 .setting-group { @apply flex flex-col gap-1; }
 .setting-group label { @apply text-sm text-stone-600; }
 .slider { @apply w-48; }
 .hint { @apply text-xs text-stone-400; }
 
 .upload-zone {
-  @apply bg-white border-2 border-dashed border-stone-300 rounded-xl p-8 text-center cursor-pointer hover:border-amber-400 transition-colors mb-4;
+  @apply bg-white border-2 border-dashed border-stone-300 rounded-xl p-8 text-center cursor-pointer hover:border-amber-400 transition-colors;
 }
 .upload-text { @apply text-stone-600 mb-1; }
 .upload-hint { @apply text-sm text-stone-400; }
 
-.action-bar { @apply bg-white rounded-xl p-3 mb-4 flex flex-wrap items-center gap-3; }
+.action-bar { @apply bg-white rounded-xl p-3 flex flex-wrap items-center gap-3; }
 .action-bar span { @apply text-sm text-stone-600; }
 .analyze-btn { @apply px-4 py-1.5 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50; }
 .select-btn { @apply px-3 py-1.5 border border-stone-300 rounded hover:bg-stone-50; }
@@ -294,7 +357,7 @@ const stats = computed(() => ({
 .export-btn { @apply px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600; }
 .clear-btn { @apply px-3 py-1.5 text-stone-500 hover:text-red-500; }
 
-.stats-bar { @apply bg-amber-50 rounded-lg p-3 mb-4 flex gap-6; }
+.stats-bar { @apply bg-amber-50 rounded-lg p-3 flex gap-6; }
 .stat { @apply text-sm font-medium; }
 .stat.blank { @apply text-orange-600; }
 .stat.duplicate { @apply text-purple-600; }

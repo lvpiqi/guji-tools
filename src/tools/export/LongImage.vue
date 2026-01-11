@@ -1,11 +1,82 @@
 <script setup lang="ts">
 /**
  * 长图生成工具
- * 将多张图片或文本拼接成小红书风格长图
+ * SEO 优化版本
  */
 import { ref, computed, watch } from 'vue'
 import FileDropzone from '@components/common/FileDropzone.vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '长图生成',
+  path: '/export/long-image',
+  category: '导出分享',
+  categoryPath: '/export',
+  
+  description: '免费在线长图生成工具。将多张古籍图片或文本拼接成小红书风格长图，支持自定义背景色和水印。',
+  keywords: ['长图生成', '图片拼接', '小红书长图', '文字长图', '图片合并', '古籍分享'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '将多张图片或文本拼接成小红书风格长图',
+  
+  features: [
+    '支持图片拼接模式',
+    '支持文本长图模式',
+    '可自定义背景颜色',
+    '可调节内边距和间距',
+    '支持添加水印文字',
+    '可调节文字字号和行高',
+    '拖拽调整图片顺序',
+    '本地生成保护隐私'
+  ],
+  
+  howToUse: [
+    '选择模式：图片拼接或文本长图',
+    '上传图片或输入文本内容',
+    '调整背景色、边距等样式',
+    '设置水印文字（可选）',
+    '点击「生成长图」下载结果'
+  ],
+  
+  introduction: `长图是社交媒体分享的流行格式，特别适合在小红书、微博等平台展示古籍内容。本工具提供两种模式：
+
+图片拼接模式：将多张古籍扫描图片垂直拼接成一张长图，方便一次性展示多页内容。
+
+文本长图模式：将古籍文本转换为精美的图片格式，使用古典风格的背景和字体，适合分享名句或段落。`,
+
+  faq: [
+    {
+      question: '图片拼接有数量限制吗？',
+      answer: '没有硬性限制，但图片过多会导致生成的长图文件很大。建议单次不超过20张。'
+    },
+    {
+      question: '如何调整图片顺序？',
+      answer: '在图片列表中使用上下箭头按钮调整顺序。'
+    },
+    {
+      question: '文本模式支持多长的文字？',
+      answer: '理论上没有限制，但文字过多会导致图片很长。建议控制在1000字以内。'
+    },
+    {
+      question: '水印会影响阅读吗？',
+      answer: '水印默认放在右下角，透明度较低，不会明显影响阅读。'
+    },
+    {
+      question: '生成的图片格式是什么？',
+      answer: '生成PNG格式图片，保证最佳质量。'
+    }
+  ],
+  
+  supportedFormats: ['JPG', 'PNG', 'WebP'],
+  maxFileSize: 20,
+  isOffline: true,
+  isFree: true
+}
 
 interface ImageItem {
   id: string
@@ -278,12 +349,7 @@ watch(mode, () => {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">长图生成</h1>
-      <p class="tool-desc">将多张古籍图片或文本拼接成小红书风格长图，支持自定义背景和水印</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <div class="tool-body">
       <div class="tool-left">
         <!-- 模式切换 -->
@@ -372,6 +438,7 @@ watch(mode, () => {
           </button>
           <button v-if="resultUrl" class="btn-success" @click="download">下载</button>
           <button class="btn-text" @click="clearAll">清空</button>
+          <ToolFeedback tool-name="长图生成" />
         </div>
       </div>
 
@@ -385,15 +452,10 @@ watch(mode, () => {
       </div>
     </div>
 
-    <RelatedTools />
-  </div>
+    </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-6xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-title { @apply text-2xl font-bold text-stone-800; }
-.tool-desc { @apply text-stone-600 mt-1; }
 .tool-body { @apply grid grid-cols-1 lg:grid-cols-2 gap-6; }
 .tool-left { @apply space-y-4; }
 .mode-tabs { @apply flex gap-2 bg-stone-100 p-1 rounded-lg; }

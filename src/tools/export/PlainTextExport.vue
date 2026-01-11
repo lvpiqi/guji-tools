@@ -1,10 +1,76 @@
 <script setup lang="ts">
 /**
  * 纯文本导出
- * 将古籍内容导出为 TXT/MD 格式，支持标点处理
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '纯文本导出',
+  path: '/export/plain-text',
+  category: '导出分享',
+  categoryPath: '/export',
+  
+  description: '免费在线古籍纯文本导出工具。将古籍内容导出为TXT/Markdown格式，支持标点转换、换行处理和行号添加。',
+  keywords: ['纯文本导出', 'TXT导出', 'Markdown导出', '古籍文本', '标点转换', '文本格式化'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '将古籍内容导出为TXT/Markdown格式',
+  
+  features: [
+    '支持TXT和Markdown格式',
+    '古籍标点转现代标点',
+    '可选移除所有标点',
+    '按段落或句子换行',
+    '可添加文档标题',
+    '可添加行号',
+    '实时预览导出效果',
+    '支持复制到剪贴板'
+  ],
+  
+  howToUse: [
+    '粘贴或输入古籍文本内容',
+    '选择导出格式（TXT/Markdown）',
+    '设置标点和换行处理方式',
+    '预览导出效果',
+    '下载文件或复制到剪贴板'
+  ],
+  
+  introduction: `古籍文本在不同场景下需要不同的格式。本工具可以将古籍内容转换为纯文本或Markdown格式，方便在各种编辑器和平台中使用。
+
+标点转换功能可以将古籍专用标点（如「」『』）转换为现代标点（如""''），提高兼容性。换行处理可以按段落或句子分行，便于阅读和编辑。
+
+Markdown格式适合在GitHub、Notion等平台使用，支持标题等基本格式。`,
+
+  faq: [
+    {
+      question: 'TXT和Markdown有什么区别？',
+      answer: 'TXT是纯文本，Markdown支持标题、列表等简单格式，在支持的平台上显示更美观。'
+    },
+    {
+      question: '标点转换会改变哪些符号？',
+      answer: '主要将「」转为""，『』转为''等古籍专用标点转为现代标点。'
+    },
+    {
+      question: '行号有什么用？',
+      answer: '行号便于引用和讨论特定内容，常用于学术研究。'
+    },
+    {
+      question: '可以处理多长的文本？',
+      answer: '理论上没有限制，但过长的文本可能导致浏览器变慢。建议单次不超过10万字。'
+    }
+  ],
+  
+  supportedFormats: ['TXT', 'MD'],
+  isOffline: true,
+  isFree: true
+}
 
 const inputText = ref('')
 const processing = ref(false)
@@ -121,11 +187,8 @@ function useExample() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1>📄 纯文本导出</h1>
-      <p>将古籍内容导出为 TXT/MD 格式</p>
-    </header>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
 
     <!-- 导出选项 -->
     <div class="options-section">
@@ -215,19 +278,16 @@ function useExample() {
         📋 复制到剪贴板
       </button>
       <button class="clear-btn" @click="clearAll">清空</button>
+      <ToolFeedback tool-name="纯文本导出" />
     </div>
-
-    <RelatedTools />
-  </div>
+    </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-4xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-header h1 { @apply text-xl md:text-2xl font-bold text-stone-800; }
-.tool-header p { @apply text-stone-500 mt-1; }
+.tool-body { @apply max-w-4xl mx-auto space-y-4; }
 
-.options-section { @apply bg-white rounded-xl p-4 mb-4; }
+.options-section { @apply bg-white rounded-xl p-4; }
 .options-section h2 { @apply font-medium text-stone-800 mb-3; }
 .options-grid { @apply grid grid-cols-2 md:grid-cols-3 gap-4; }
 .option-item { @apply space-y-1; }
@@ -237,7 +297,7 @@ function useExample() {
 }
 .checkbox-item label { @apply flex items-center gap-2 text-sm cursor-pointer; }
 
-.input-section { @apply bg-white rounded-xl p-4 mb-4; }
+.input-section { @apply bg-white rounded-xl p-4; }
 .input-header { @apply flex justify-between items-center mb-2; }
 .input-header h2 { @apply font-medium text-stone-800; }
 .char-count { @apply text-sm text-stone-500; }
@@ -246,7 +306,7 @@ function useExample() {
 }
 .example-btn { @apply mt-2 text-sm text-amber-600 hover:underline; }
 
-.preview-section { @apply bg-white rounded-xl p-4 mb-4; }
+.preview-section { @apply bg-white rounded-xl p-4; }
 .preview-section h2 { @apply font-medium text-stone-800 mb-3; }
 .preview-content {
   @apply bg-stone-50 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap max-h-64 overflow-auto;

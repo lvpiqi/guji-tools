@@ -1,11 +1,86 @@
 <script setup lang="ts">
 /**
  * 蠹鱼眼/墨点修复工具
- * 用户绘制遮罩，使用 Canvas 进行简单修复
+ * SEO 优化版本
  */
 import { ref, computed } from 'vue'
 import FileDropzone from '@components/common/FileDropzone.vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '蠹鱼眼修复',
+  path: '/clean/inpaint',
+  category: '图像清理',
+  categoryPath: '/clean',
+  
+  description: '免费在线古籍蠹鱼眼墨点修复工具。用画笔标记需要修复的虫蛀、墨点、污渍区域，自动填充修复，还原古籍原貌。',
+  keywords: ['蠹鱼眼修复', '墨点修复', '古籍修复', '图像修复', '虫蛀修复', '污渍去除', 'inpaint'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '用画笔标记需要修复的区域，自动填充修复',
+  
+  features: [
+    '画笔标记需要修复的区域',
+    '自动分析周围像素进行填充',
+    '可调节画笔大小',
+    '支持绘制和擦除模式',
+    '实时预览标记区域',
+    '修复前后对比',
+    '本地处理，保护隐私',
+    '支持触屏设备操作'
+  ],
+  
+  howToUse: [
+    '上传需要修复的古籍图片',
+    '调整画笔大小，用红色画笔标记需要修复的区域',
+    '如标记错误，切换到擦除模式修正',
+    '点击「开始修复」进行自动填充',
+    '查看修复结果，满意后下载'
+  ],
+  
+  introduction: `古籍在保存过程中，常常会受到虫蛀（蠹鱼眼）、墨点、水渍等损害，影响阅读和数字化效果。本工具可以帮助您修复这些损坏区域，还原古籍的原貌。
+
+使用方法很简单：用画笔在图像上标记需要修复的区域（显示为红色半透明），然后点击修复按钮。工具会分析标记区域周围的像素，使用智能填充算法自动补全损坏部分。
+
+修复算法基于周围像素的加权平均，对于小面积的虫蛀和墨点效果较好。对于大面积损坏，可能需要多次修复或配合其他专业工具使用。`,
+
+  faq: [
+    {
+      question: '适合修复哪些类型的损坏？',
+      answer: '适合修复小面积的虫蛀（蠹鱼眼）、墨点、污渍、水渍等。对于大面积损坏效果可能不理想。'
+    },
+    {
+      question: '画笔大小如何选择？',
+      answer: '画笔大小应略大于需要修复的区域。太小会遗漏边缘，太大会影响周围正常内容。'
+    },
+    {
+      question: '标记错了怎么办？',
+      answer: '切换到「擦除」模式，可以擦除错误标记的区域。也可以点击「清除遮罩」重新开始。'
+    },
+    {
+      question: '修复效果不理想怎么办？',
+      answer: '可以尝试：1) 更精确地标记损坏区域；2) 对大面积损坏分多次小范围修复；3) 修复后再次标记残留问题区域。'
+    },
+    {
+      question: '图片会上传到服务器吗？',
+      answer: '不会。所有处理都在浏览器本地完成，图片不会上传到任何服务器。'
+    },
+    {
+      question: '支持触屏操作吗？',
+      answer: '支持。可以在平板或触屏设备上用手指绘制标记区域。'
+    }
+  ],
+  
+  supportedFormats: ['JPG', 'PNG', 'WebP'],
+  maxFileSize: 20,
+  isOffline: true,
+  isFree: true
+}
 
 const imageFile = ref<File | null>(null)
 const imageUrl = ref<string>('')
@@ -253,12 +328,7 @@ function clearAll() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1 class="tool-title">蠹鱼眼/墨点修复</h1>
-      <p class="tool-desc">用画笔标记需要修复的区域，自动填充修复</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <div v-if="!hasImage">
       <FileDropzone
         accept="image/jpeg,image/png,image/webp"
@@ -340,7 +410,7 @@ function clearAll() {
       <!-- 结果预览 -->
       <div v-if="resultUrl" class="result-section">
         <h3>修复结果</h3>
-        <img :src="resultUrl" class="result-image" />
+        <img :src="resultUrl" class="result-image" alt="修复结果" />
         <div class="result-actions">
           <button class="btn-primary" @click="downloadResult">下载结果</button>
           <button class="btn-text" @click="resultUrl = ''">关闭预览</button>
@@ -349,27 +419,16 @@ function clearAll() {
 
       <!-- 底部操作 -->
       <div class="footer-actions">
-        <button class="btn-text" @click="clearAll">重新选择图片</button>
+        <div class="actions-left">
+          <button class="btn-text" @click="clearAll">重新选择图片</button>
+        </div>
+        <ToolFeedback tool-name="蠹鱼眼修复" />
       </div>
     </div>
-
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page {
-  @apply max-w-4xl mx-auto;
-}
-.tool-header {
-  @apply mb-6;
-}
-.tool-title {
-  @apply text-2xl font-bold text-stone-800;
-}
-.tool-desc {
-  @apply text-stone-600 mt-1;
-}
 .tool-body {
   @apply space-y-6;
 }
@@ -441,6 +500,9 @@ function clearAll() {
   @apply flex gap-3 mt-4;
 }
 .footer-actions {
-  @apply text-center;
+  @apply flex items-center justify-between;
+}
+.actions-left {
+  @apply flex gap-3;
 }
 </style>

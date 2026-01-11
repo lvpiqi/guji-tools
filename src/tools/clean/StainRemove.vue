@@ -1,6 +1,81 @@
 <script setup lang="ts">
+/**
+ * 水渍/黄斑修复
+ * SEO 优化版本
+ */
 import { ref } from 'vue'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '污渍修复',
+  path: '/clean/stain-remove',
+  category: '图像清理',
+  categoryPath: '/clean',
+  
+  description: '免费在线古籍水渍黄斑修复工具。自动检测并修复古籍图像上的水渍、黄斑、霉斑等污渍，还原清晰页面。',
+  keywords: ['水渍修复', '黄斑去除', '污渍清理', '古籍修复', '图像修复', '霉斑去除'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '自动检测并修复古籍图像上的水渍和黄斑',
+  
+  features: [
+    '自动检测黄斑区域',
+    '自动检测水渍区域',
+    '可调节修复强度',
+    '保护文字区域选项',
+    '实时预览修复效果',
+    '支持常见图片格式',
+    '本地处理保护隐私',
+    '一键下载修复结果'
+  ],
+  
+  howToUse: [
+    '上传有水渍或黄斑的古籍图片',
+    '调整修复强度（推荐50-70%）',
+    '根据需要开启「保护文字区域」',
+    '点击「开始修复」进行处理',
+    '对比效果，满意后下载结果'
+  ],
+  
+  introduction: `古籍在保存过程中常会出现水渍、黄斑、霉斑等污渍，影响阅读和数字化效果。本工具可以自动检测并修复这些污渍区域。
+
+工具通过颜色分析识别黄斑（偏黄色区域）和水渍（灰褐色不均匀区域），然后将这些区域的颜色向白色方向调整，达到修复效果。
+
+「保护文字区域」选项可以避免修复过程影响到文字的清晰度。建议先用较低强度尝试，逐步调整到满意效果。`,
+
+  faq: [
+    {
+      question: '修复强度设多少合适？',
+      answer: '通常50-70%效果较好。强度太高可能导致背景过白，太低则修复不明显。'
+    },
+    {
+      question: '「保护文字区域」有什么作用？',
+      answer: '开启后会尽量保持深色区域（文字）不变，只修复浅色污渍区域。'
+    },
+    {
+      question: '能修复所有类型的污渍吗？',
+      answer: '主要针对黄斑和水渍。墨渍、油渍等深色污渍效果有限。'
+    },
+    {
+      question: '修复后文字会变淡吗？',
+      answer: '开启「保护文字区域」可以最大程度保护文字。如果文字变淡，可以降低修复强度。'
+    },
+    {
+      question: '处理速度如何？',
+      answer: '取决于图片大小。2000x3000的图片通常在2-5秒内完成。'
+    }
+  ],
+  
+  supportedFormats: ['JPG', 'PNG', 'WebP'],
+  maxFileSize: 20,
+  isOffline: true,
+  isFree: true
+}
 
 const imageFile = ref<File | null>(null)
 const imageUrl = ref('')
@@ -74,51 +149,44 @@ function clearAll() {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1>💧 水渍/黄斑修复</h1>
-      <p>自动检测并修复古籍图像上的水渍和黄斑</p>
-    </header>
-    <div class="settings-section">
-      <div class="setting-group">
-        <label>修复强度: {{ strength }}%</label>
-        <input type="range" v-model="strength" min="10" max="100" class="slider" />
-      </div>
-      <div class="setting-group">
-        <label class="checkbox"><input type="checkbox" v-model="preserveText" /> 保护文字区域</label>
-      </div>
-    </div>
-    <div v-if="!imageUrl" class="upload-zone" @drop="handleDrop" @dragover.prevent @click="($refs.fileInput as HTMLInputElement).click()">
-      <input ref="fileInput" type="file" accept="image/*" hidden @change="handleFileSelect" />
-      <p class="upload-text">📁 拖放图片到此处，或点击选择</p>
-    </div>
-    <div v-else class="preview-section">
-      <div class="preview-grid">
-        <div class="preview-item"><h3>原图</h3><img :src="imageUrl" alt="原图" /></div>
-        <div class="preview-item">
-          <h3>修复后</h3>
-          <img v-if="resultUrl" :src="resultUrl" alt="修复后" />
-          <div v-else class="placeholder">点击"开始修复"</div>
+  <ToolPageSeo :config="seoConfig">
+    <div class="tool-body">
+      <div class="settings-section">
+        <div class="setting-group">
+          <label>修复强度: {{ strength }}%</label>
+          <input type="range" v-model="strength" min="10" max="100" class="slider" />
+        </div>
+        <div class="setting-group">
+          <label class="checkbox"><input type="checkbox" v-model="preserveText" /> 保护文字区域</label>
         </div>
       </div>
-      <div class="actions">
-        <button @click="processImage" :disabled="processing" class="process-btn">{{ processing ? '处理中...' : '开始修复' }}</button>
-        <button v-if="resultUrl" @click="download" class="download-btn">下载结果</button>
-        <button @click="clearAll" class="clear-btn">重新选择</button>
+      <div v-if="!imageUrl" class="upload-zone" @drop="handleDrop" @dragover.prevent @click="($refs.fileInput as HTMLInputElement).click()">
+        <input ref="fileInput" type="file" accept="image/*" hidden @change="handleFileSelect" />
+        <p class="upload-text">📁 拖放图片到此处，或点击选择</p>
+      </div>
+      <div v-else class="preview-section">
+        <div class="preview-grid">
+          <div class="preview-item"><h3>原图</h3><img :src="imageUrl" alt="原图" /></div>
+          <div class="preview-item">
+            <h3>修复后</h3>
+            <img v-if="resultUrl" :src="resultUrl" alt="修复后" />
+            <div v-else class="placeholder">点击"开始修复"</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button @click="processImage" :disabled="processing" class="process-btn">{{ processing ? '处理中...' : '开始修复' }}</button>
+          <button v-if="resultUrl" @click="download" class="download-btn">下载结果</button>
+          <button @click="clearAll" class="clear-btn">重新选择</button>
+          <ToolFeedback tool-name="污渍修复" />
+        </div>
       </div>
     </div>
-
-    <!-- 相关工具 -->
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-4xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-header h1 { @apply text-xl md:text-2xl font-bold text-stone-800; }
-.tool-header p { @apply text-stone-500 mt-1; }
-.settings-section { @apply bg-white rounded-xl p-4 mb-4 flex flex-wrap gap-6; }
+.tool-body { @apply max-w-4xl mx-auto space-y-4; }
+.settings-section { @apply bg-white rounded-xl p-4 flex flex-wrap gap-6; }
 .setting-group { @apply flex flex-col gap-1; }
 .setting-group label { @apply text-sm text-stone-600; }
 .slider { @apply w-48; }

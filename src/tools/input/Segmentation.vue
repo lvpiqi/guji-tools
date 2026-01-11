@@ -1,11 +1,84 @@
 <script setup lang="ts">
 /**
- * 古汉语分词
- * 文言文自动分词 + 词性标注，支持 AI 生成
+ * 古汉语分词工具
+ * SEO 优化版本
  */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import RelatedTools from '@/components/common/RelatedTools.vue'
+import ToolPageSeo, { type ToolSeoConfig } from '@/components/common/ToolPageSeo.vue'
+import ToolFeedback from '@/components/common/ToolFeedback.vue'
+
+// SEO 配置
+const seoConfig: ToolSeoConfig = {
+  name: '古汉语分词',
+  path: '/input/segmentation',
+  category: '输入处理',
+  categoryPath: '/input',
+  
+  description: '免费在线古汉语分词工具。文言文自动分词和词性标注，支持AI智能分词，显示词性和释义，点击单字可查看字形详情。',
+  keywords: ['古汉语分词', '文言文分词', '词性标注', 'AI分词', '古文分析', '词义解释'],
+  ogImage: '/og-images/default.png',
+  
+  publishedTime: '2024-01-01T00:00:00Z',
+  modifiedTime: new Date().toISOString(),
+  
+  shortDesc: '文言文自动分词 + 词性标注，支持 AI 智能分词',
+  
+  features: [
+    '自动分词并标注词性',
+    '显示每个词的古文释义',
+    '支持AI智能分词（更准确）',
+    '词性颜色区分，一目了然',
+    '点击单字可查看字形详情',
+    '内置常用古文词汇库',
+    '一键复制分词结果',
+    '本地缓存AI分词结果'
+  ],
+  
+  howToUse: [
+    '在输入框中粘贴或输入古文文本',
+    '选择是否启用AI智能分词',
+    '点击「开始分词」进行分析',
+    '查看分词结果和词性标注',
+    '点击单字可跳转查看字形详情'
+  ],
+  
+  introduction: `理解文言文的第一步是正确分词。与现代汉语不同，古汉语的词汇边界往往不明确，同一个字在不同语境下可能是独立的词，也可能是词的一部分。本工具可以自动对文言文进行分词，并标注每个词的词性。
+
+工具支持两种分词模式：本地分词使用内置的常用词汇库，速度快但对生僻词支持有限；AI智能分词通过DeepSeek API进行分析，准确率更高，还能提供每个词的古文释义。
+
+分词结果使用不同颜色标注词性：名词（蓝色）、动词（绿色）、形容词（黄色）、副词（紫色）等，方便您快速理解句子结构。点击任意单字还可以跳转到字形详情页，查看该字的字形演变和详细释义。`,
+
+  faq: [
+    {
+      question: '支持哪些词性标注？',
+      answer: '支持名词、动词、形容词、副词、介词、连词、助词、代词、数词、量词等常见词性。'
+    },
+    {
+      question: 'AI分词和本地分词有什么区别？',
+      answer: 'AI分词准确率更高，能处理生僻词和复杂句式，还提供词义解释。本地分词速度快，但只能处理常用词。'
+    },
+    {
+      question: 'AI功能需要付费吗？',
+      answer: 'AI功能使用DeepSeek API，需要您自己的API Key。DeepSeek提供免费额度。'
+    },
+    {
+      question: '词性颜色代表什么？',
+      answer: '蓝色=名词，绿色=动词，黄色=形容词，紫色=副词，粉色=介词，橙色=连词，灰色=助词/标点。'
+    },
+    {
+      question: '点击单字有什么功能？',
+      answer: '点击任意单字可以跳转到字形详情页，查看该字的字形演变、释义等信息。'
+    },
+    {
+      question: '分词结果可以复制吗？',
+      answer: '可以。点击「复制分词结果」按钮可以复制用斜杠分隔的分词文本。'
+    }
+  ],
+  
+  isOffline: false,
+  isFree: true
+}
 
 const router = useRouter()
 const inputText = ref('')
@@ -240,12 +313,7 @@ function useExample(text: string) {
 </script>
 
 <template>
-  <div class="tool-page">
-    <header class="tool-header">
-      <h1>📝 古汉语分词</h1>
-      <p>文言文自动分词 + 词性标注，支持 AI 生成</p>
-    </header>
-
+  <ToolPageSeo :config="seoConfig">
     <!-- 设置 -->
     <div class="settings-section">
       <label class="checkbox">
@@ -274,10 +342,13 @@ function useExample(text: string) {
       </div>
       
       <div class="input-actions">
-        <button class="segment-btn" @click="doSegment" :disabled="processing || !inputText.trim()">
-          {{ processing ? '分词中...' : '开始分词' }}
-        </button>
-        <button class="clear-btn" @click="clearAll">清空</button>
+        <div class="actions-left">
+          <button class="btn-primary" @click="doSegment" :disabled="processing || !inputText.trim()">
+            {{ processing ? '分词中...' : '开始分词' }}
+          </button>
+          <button class="btn-secondary" @click="clearAll">清空</button>
+        </div>
+        <ToolFeedback tool-name="古汉语分词" />
       </div>
     </div>
 
@@ -314,54 +385,100 @@ function useExample(text: string) {
       
       <button class="copy-btn" @click="copyResult">复制分词结果</button>
     </div>
-
-    <!-- 相关工具 -->
-    <RelatedTools />
-  </div>
+  </ToolPageSeo>
 </template>
 
 <style scoped>
-.tool-page { @apply max-w-4xl mx-auto; }
-.tool-header { @apply mb-6; }
-.tool-header h1 { @apply text-xl md:text-2xl font-bold text-stone-800; }
-.tool-header p { @apply text-stone-500 mt-1; }
+.settings-section {
+  @apply bg-white rounded-xl p-4 mb-4;
+}
+.checkbox {
+  @apply flex items-center gap-2 text-sm cursor-pointer;
+}
 
-.settings-section { @apply bg-white rounded-xl p-4 mb-4; }
-.checkbox { @apply flex items-center gap-2 text-sm cursor-pointer; }
+.api-panel {
+  @apply bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-center;
+}
+.api-input {
+  @apply w-full max-w-md px-4 py-2 border border-stone-300 rounded-lg my-3;
+}
+.btn-primary {
+  @apply px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50;
+}
+.btn-secondary {
+  @apply px-4 py-2 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300;
+}
+.hint {
+  @apply text-sm text-stone-500;
+}
+.hint a {
+  @apply text-amber-600 hover:underline;
+}
 
-.api-panel { @apply bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-center; }
-.api-input { @apply w-full max-w-md px-4 py-2 border border-stone-300 rounded-lg my-3; }
-.btn-primary { @apply px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600; }
-.hint { @apply text-sm text-stone-500; }
-.hint a { @apply text-amber-600 hover:underline; }
-
-.input-section { @apply bg-white rounded-xl p-4 mb-4; }
+.input-section {
+  @apply bg-white rounded-xl p-4 mb-4;
+}
 .input-section textarea {
   @apply w-full p-3 border border-stone-300 rounded-lg resize-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none;
 }
 
-.examples { @apply flex flex-wrap gap-2 mt-3 text-sm; }
-.examples span { @apply text-stone-500; }
-.examples button { @apply px-2 py-1 bg-stone-100 rounded hover:bg-stone-200 text-stone-600; }
+.examples {
+  @apply flex flex-wrap gap-2 mt-3 text-sm;
+}
+.examples span {
+  @apply text-stone-500;
+}
+.examples button {
+  @apply px-2 py-1 bg-stone-100 rounded hover:bg-stone-200 text-stone-600;
+}
 
-.input-actions { @apply flex gap-2 mt-3; }
-.segment-btn { @apply flex-1 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50; }
-.clear-btn { @apply px-4 py-2 border border-stone-300 rounded-lg hover:bg-stone-50; }
+.input-actions {
+  @apply flex items-center justify-between mt-3;
+}
+.actions-left {
+  @apply flex gap-2;
+}
 
-.result-section { @apply bg-white rounded-xl p-4; }
-.result-header { @apply flex justify-between items-center mb-3; }
-.result-header h2 { @apply font-medium text-stone-800; }
-.result-header h2 .hint { @apply text-xs text-stone-400 font-normal ml-2; }
-.toggle { @apply flex items-center gap-2 text-sm text-stone-600 cursor-pointer; }
+.result-section {
+  @apply bg-white rounded-xl p-4;
+}
+.result-header {
+  @apply flex justify-between items-center mb-3;
+}
+.result-header h2 {
+  @apply font-medium text-stone-800;
+}
+.result-header h2 .hint {
+  @apply text-xs text-stone-400 font-normal ml-2;
+}
+.toggle {
+  @apply flex items-center gap-2 text-sm text-stone-600 cursor-pointer;
+}
 
-.legend { @apply flex flex-wrap gap-2 mb-4 pb-3 border-b border-stone-200; }
-.legend-item { @apply px-2 py-0.5 rounded text-xs; }
+.legend {
+  @apply flex flex-wrap gap-2 mb-4 pb-3 border-b border-stone-200;
+}
+.legend-item {
+  @apply px-2 py-0.5 rounded text-xs;
+}
 
-.words-container { @apply flex flex-wrap gap-2 mb-4; }
-.word-item { @apply px-2 py-1 rounded-lg text-center; }
-.word-item.clickable { @apply cursor-pointer hover:ring-2 hover:ring-amber-400; }
-.word { @apply block text-lg; }
-.meaning { @apply block text-xs opacity-70 mt-0.5; }
+.words-container {
+  @apply flex flex-wrap gap-2 mb-4;
+}
+.word-item {
+  @apply px-2 py-1 rounded-lg text-center;
+}
+.word-item.clickable {
+  @apply cursor-pointer hover:ring-2 hover:ring-amber-400;
+}
+.word {
+  @apply block text-lg;
+}
+.meaning {
+  @apply block text-xs opacity-70 mt-0.5;
+}
 
-.copy-btn { @apply w-full py-2 border border-stone-300 rounded-lg hover:bg-stone-50; }
+.copy-btn {
+  @apply w-full py-2 border border-stone-300 rounded-lg hover:bg-stone-50;
+}
 </style>
